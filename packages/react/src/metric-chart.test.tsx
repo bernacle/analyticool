@@ -51,4 +51,18 @@ describe("metric presentation", () => {
       renderToStaticMarkup(<MetricChart result={{ ...empty, points: [] }} />),
     ).toThrow();
   });
+
+  it("renders later published versions through the existing result components", () => {
+    const result = calculateMonthlyRevenue(
+      { ...monthlyRevenueDefinition, version: 2 },
+      { asOf: "2026-07-01", invoices: [] },
+    );
+    expect(result.metricVersion).toBe(2);
+    expect(renderToStaticMarkup(<MetricKpi result={result} />)).toContain(
+      "$0.00",
+    );
+    expect(renderToStaticMarkup(<MetricChart result={result} />)).toContain(
+      "Jun 2026",
+    );
+  });
 });
