@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Add it to your app · Net revenue after fees · Analyticool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&family=Instrument+Serif&display=swap"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="shell.css"><link rel="stylesheet" href="components.css">
+<style>
+  /* Embed — "How do I get this into my app?" The preview leads, the code is one copy away, setup is linked from the code. */
+  .play { margin-top: 36px; padding: 0; overflow: hidden; }
+  .tools { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 14px 0; flex-wrap: wrap; }
+  .stage { margin: 14px 14px 0; border-radius: var(--r-sm); padding: 40px 48px; transition: background 200ms ease; }
+  .stage[data-host="light"] { --h-bg: #F3F4F6; --h-card: #fff; --h-ink: #111318; --h-muted: #5D626B; --h-line: #E6E8EB; --h-series: #3B5BDB; background: var(--h-bg); }
+  .stage[data-host="dark"] { --h-bg: #0E1014; --h-card: #16181D; --h-ink: #ECEDEF; --h-muted: #9DA2AA; --h-line: #272B32; --h-series: #7C9CFF; background: var(--h-bg); }
+  .widget { max-width: 560px; margin: 0 auto; background: var(--h-card); color: var(--h-ink); border-radius: 10px; box-shadow: inset 0 0 0 1px var(--h-line); padding: 18px 20px; transition: background 200ms ease, color 200ms ease; }
+  .widget .m { color: var(--h-muted); font-size: 13px; } .widget .big { font-size: 28px; line-height: 34px; font-weight: 600; letter-spacing: -0.02em; }
+  .widget .chart { --chart-1: var(--h-series); --grid: var(--h-line); --axis-ink: var(--h-muted); --surface: var(--h-card); --ink: var(--h-ink); margin-top: 6px; }
+  .codebox { margin-top: 14px; background: #0F0E0C; }
+  .codebox pre.code { padding: 18px 32px 22px; font-size: 13.5px; line-height: 24px; }
+  .codebox .ln { display: block; min-height: 24px; } .ln.i1 { padding-left: 2ch; } .ln.i2 { padding-left: 4ch; } .ln.i3 { padding-left: 6ch; }
+  .codefoot { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 0 16px 16px 32px; }
+  .codefoot p { font-size: 13px; line-height: 20px; color: var(--muted); max-width: 62ch; }
+  .setup { margin-top: 56px; scroll-margin-top: 24px; }
+  .setup h2 { font-size: 16px; font-weight: 500; } .setup > p { margin-top: 4px; }
+  .steps { margin-top: 14px; }
+  .steps li + li { box-shadow: 0 -1px 0 var(--line-1); }
+  .step { width: 100%; display: grid; grid-template-columns: 18px minmax(0, 1fr) auto; gap: 14px; align-items: center; min-height: 60px; padding: 0; border: 0; background: none; text-align: left; }
+  .step .mk { width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed var(--faint); }
+  .step .t { font-size: 15px; } .step .h { display: block; font-size: 13px; color: var(--faint); }
+  .step .r { color: var(--muted); font-size: 13px; display: inline-flex; gap: 8px; align-items: center; }
+  .step .r svg { width: 12px; height: 12px; transition: transform var(--dur-2) var(--ease-out); } .step[aria-expanded="true"] .r svg { transform: rotate(180deg); }
+  .step:hover .t { color: #fff; }
+  .detail { padding: 0 0 22px 32px; display: flex; flex-direction: column; gap: 12px; max-width: 640px; }
+  .cmd { display: flex; align-items: center; justify-content: space-between; gap: 12px; background: var(--card); border-radius: var(--r-sm); padding: 6px 6px 6px 16px; font: 13px/24px var(--mono); }
+  .cmd > span { white-space: nowrap; overflow-x: auto; }
+  .field { display: flex; gap: 8px; } .field input { flex: 1; min-width: 0; height: 40px; border-radius: 999px; border: 0; background: var(--card); padding: 0 16px; font: 13px var(--mono); }
+  .adv { margin-top: 40px; }
+  .adv .rows > * { box-shadow: 0 -1px 0 var(--line-1); } .adv .rows > :first-child { box-shadow: none; }
+  .docs { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 8px 24px; font-size: 14px; }
+  @media (max-width: 720px) { .stage { padding: 18px 12px; margin: 12px 12px 0; } .tools { padding: 12px 12px 0; } .codebox pre.code { padding: 14px 18px 18px; font-size: 12.5px; } .codefoot { flex-direction: column; align-items: stretch; padding: 0 16px 16px; } .detail { padding-left: 0; } .step { grid-template-columns: 18px minmax(0, 1fr); padding: 12px 0; } .step .r { grid-column: 2; } }
+</style>
+</head>
+<body class="grain">
+<div class="app">
+  {{SHELL}}
+  <main class="canvas">
+    <div class="col">
+      <h1 class="title">Add it to your app</h1>
+      <p class="lead">Version 1 of Net revenue after fees, the definition you approved. It renders in your app’s font and colors.</p>
+
+      <section class="card play" aria-label="Preview and code">
+        <div class="tools">
+          <div class="seg" data-choice="view" role="group" aria-label="View"><button aria-pressed="true" data-value="chart" data-code="line">Chart</button><button aria-pressed="false" data-value="kpi">KPI</button></div>
+          <div class="seg" data-choice="host" role="group" aria-label="Preview on"><button aria-pressed="true" data-value="light">Light app</button><button aria-pressed="false" data-value="dark">Dark app</button></div>
+        </div>
+        <p class="label" data-for="mode:today" hidden style="padding:10px 16px 0 30px">Preview shows the proposed metric. Today’s <code style="font-family:var(--mono);color:var(--muted)">MetricChart</code> renders monthly collected revenue with an exact-value table.</p>
+        <div class="stage" data-ui data-attr="host" data-host="light">
+          <div class="widget">
+            <div data-for="view:chart"><span class="m">Net revenue after fees</span><div style="display:flex;gap:10px;align-items:baseline"><span class="big">$513,384</span><span class="m">Oct · +3.4%</span></div><div class="chart" data-chart data-approved="true" data-height="160" data-endlabel="off"></div></div>
+            <div data-for="view:kpi" hidden><span class="m">Net revenue after fees · October</span><p class="big" style="font-size:36px;line-height:44px">$513,384</p><span class="m">+3.4% vs September</span></div>
+          </div>
+        </div>
+
+        <div class="codebox">
+          <div class="modebar">
+            <div class="seg" data-choice="mode" role="group" aria-label="Which API"><button aria-pressed="true" data-value="proposed">Proposed SDK</button><button aria-pressed="false" data-value="today">Available today</button></div>
+            <button class="btn btn-primary" data-copy="#snippet" data-for="mode:proposed"><svg aria-hidden="true"><use href="icons.svg#check"/></svg><span data-label>Copy code</span></button>
+            <button class="btn btn-primary" data-copy="#snippet-today" data-for="mode:today" hidden><svg aria-hidden="true"><use href="icons.svg#check"/></svg><span data-label>Copy code</span></button>
+          </div>
+<pre class="code" id="snippet" data-for="mode:proposed"><span class="ln"><span class="k">import</span> { <span class="f">Metric</span> } <span class="k">from</span> <span class="s">'@analyticool/react'</span></span><span class="ln"></span><span class="ln"><span class="k">export function</span> <span class="f">Revenue</span>({ token }) {</span><span class="ln i1" data-i="1"><span class="k">return</span> (</span><span class="ln i2" data-i="2"><span class="p">&lt;</span><span class="f">Metric</span></span><span class="ln i3" data-i="3">id=<span class="s">"net_revenue_after_fees"</span></span><span class="ln i3" data-i="3">view=<span class="s">"<span data-text="view">line</span>"</span></span><span class="ln i3" data-i="3">token={token}</span><span class="ln i2" data-i="2"><span class="p">/&gt;</span></span><span class="ln i1" data-i="1">)</span><span class="ln">}</span></pre>
+<pre class="code" id="snippet-today" data-for="mode:today" hidden><span class="ln"><span class="k">import</span> { <span class="f">calculateMonthlyRevenue</span>, <span class="f">monthlyRevenueDefinition</span> } <span class="k">from</span> <span class="s">'@analyticool/core'</span></span><span class="ln"><span class="k">import</span> { <span class="f">MetricChart</span> } <span class="k">from</span> <span class="s">'@analyticool/react'</span></span><span class="ln"></span><span class="ln"><span class="c">// On your server, with records you have already authorized</span></span><span class="ln"><span class="k">const</span> result <span class="p">=</span> <span class="f">calculateMonthlyRevenue</span>(monthlyRevenueDefinition, { asOf, invoices })</span><span class="ln"></span><span class="ln"><span class="k">export function</span> <span class="f">Revenue</span>() {</span><span class="ln i1" data-i="1"><span class="k">return</span> <span class="p">&lt;</span><span class="f">MetricChart</span> result={result} <span class="p">/&gt;</span></span><span class="ln">}</span></pre>
+          <div class="codefoot">
+            <p data-for="mode:proposed"><span class="tag">Proposed</span>&nbsp; Not in <code style="font-family:var(--mono);color:var(--ink)">@analyticool/react</code> yet. The component would fetch this approved definition by id with a server-minted token. <a class="link" href="#setup">Setup: 3 steps</a></p>
+            <p data-for="mode:today" hidden><span class="tag today">In this repo</span>&nbsp; One predefined metric, monthly collected revenue, computed on your server and passed in as <code style="font-family:var(--mono);color:var(--ink)">result</code>. The packages are workspace-only and not on npm yet. <a class="link" href="#setup">Setup: 2 steps</a></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="setup" id="setup" aria-labelledby="setup-t">
+        <h2 id="setup-t">Before it renders</h2>
+        <p class="label" data-for="mode:proposed">Three things, once per app. Proposed flow.</p>
+        <p class="label" data-for="mode:today" hidden>Two things, in this repository today.</p>
+        <ol class="steps" data-for="mode:proposed">
+          <li><button class="step" data-disclose="one" aria-expanded="true" aria-controls="s-install"><span class="mk" aria-hidden="true"></span><span><span class="t">Install the package</span><span class="h">Needs React 19</span></span><span class="r">npm<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></span></button>
+            <div class="detail" id="s-install"><div class="cmd"><span>npm i @analyticool/react</span><button class="btn btn-quiet" style="height:30px" data-copy="npm i @analyticool/react"><svg aria-hidden="true"><use href="icons.svg#check"/></svg><span data-label>Copy</span></button></div></div></li>
+          <li><button class="step" data-disclose="one" aria-expanded="false" aria-controls="s-origin"><span class="mk" aria-hidden="true"></span><span><span class="t">Allow your app’s origin</span><span class="h">Requests from anywhere else are refused</span></span><span class="r">Not set<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></span></button>
+            <div class="detail" id="s-origin" hidden><label class="label" for="origin">Allowed origin</label><div class="field"><input id="origin" placeholder="https://app.lumenlabs.io" autocomplete="url"><button class="btn">Save origin</button></div></div></li>
+          <li><button class="step" data-disclose="one" aria-expanded="false" aria-controls="s-token"><span class="mk" aria-hidden="true"></span><span><span class="t">Mint a token on your server</span><span class="h">It can read this metric and nothing else</span></span><span class="r">Read how<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></span></button>
+            <div class="detail" id="s-token" hidden><p class="lead" style="margin:0;font-size:14px;line-height:22px">Create the token in your backend with your server key, then pass it to <code style="font-family:var(--mono);font-size:13px;color:var(--ink)">&lt;Metric&gt;</code>. The token comes from your server, never from the browser. <a class="link" href="#docs/tokens">Server tokens guide</a></p></div></li>
+        </ol>
+        <ol class="steps" data-for="mode:today" hidden>
+          <li><button class="step" data-disclose="one" aria-expanded="true" aria-controls="t-add"><span class="mk" aria-hidden="true"></span><span><span class="t">Use the workspace packages</span><span class="h">@analyticool/core and @analyticool/react, React 19</span></span><span class="r">pnpm<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></span></button>
+            <div class="detail" id="t-add"><div class="cmd"><span>pnpm add @analyticool/core@workspace:* @analyticool/react@workspace:*</span><button class="btn btn-quiet" style="height:30px" data-copy="pnpm add @analyticool/core@workspace:* @analyticool/react@workspace:*"><svg aria-hidden="true"><use href="icons.svg#check"/></svg><span data-label>Copy</span></button></div></div></li>
+          <li><button class="step" data-disclose="one" aria-expanded="false" aria-controls="t-calc"><span class="mk" aria-hidden="true"></span><span><span class="t">Compute the result on your server</span><span class="h">Core validates inputs and never reads the clock</span></span><span class="r">Read how<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></span></button>
+            <div class="detail" id="t-calc" hidden><p class="lead" style="margin:0;font-size:14px;line-height:22px">Pass <code style="font-family:var(--mono);font-size:13px;color:var(--ink)">asOf</code> and your authorized invoices to <code style="font-family:var(--mono);font-size:13px;color:var(--ink)">calculateMonthlyRevenue</code>. There is no hosted API, token or origin check yet; authorization is your application’s job. <a class="link" href="#readme">Repository README</a></p></div></li>
+        </ol>
+      </section>
+
+      <section class="adv" aria-label="Advanced">
+        <button class="disclose-btn" data-disclose aria-expanded="false" aria-controls="adv">Advanced options<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></button>
+        <div id="adv" hidden style="margin-top:12px;max-width:640px">
+          <div class="rows"><div><span class="label" style="font-size:14px">Version</span><span>Pinned to v1</span></div><div><span class="label" style="font-size:14px">Also available as</span><span>REST API · SQL export <span class="tag" style="margin-left:6px">Proposed</span></span></div></div>
+        </div>
+      </section>
+      <p class="docs"><a class="link" href="#docs/embedding">Embedding guide</a><a class="link" href="#docs/tokens">Server tokens</a><a class="link" href="#readme">What exists today</a></p>
+    </div>
+  </main>
+</div>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<script src="data.js"></script><script src="charts.js"></script><script src="app.js"></script>
+</body>
+</html>

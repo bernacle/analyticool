@@ -1,0 +1,57 @@
+/* Darkroom foundation: palette, faces, browser surfaces. No layout here.
+   Fonts load from Google Fonts (OFL) in each page <head>; swap them by changing the --sans/--serif/--mono tokens. */
+
+:root {
+  /* Darkroom palette, unchanged values */
+  --ground: #0B0A09; --surface: #12110F; --well: #0D0C0B; --raised: #1A1815; --overlay: #1E1C19;
+  --ink: #EFEBE4; --muted: #ADA79C; --faint: #8F897E; --off: #57524A; /* --off is for disabled marks only */
+  --hover: rgba(255, 240, 220, .045); --press: rgba(255, 240, 220, .075);
+  --line-1: rgba(255, 240, 220, .065); --line-2: rgba(255, 240, 220, .1); --line-3: rgba(255, 240, 220, .17);
+  --accent: #ACA4F6; --ok: #76C39A; --warn: #E6AE62; --warn-soft: rgba(230, 174, 98, .08); --err: #EE8473;
+  --sx-kw: #C3B8F7; --sx-fn: #E9D9B8; --sx-str: #DDA56E; --sx-num: #C2BE72; --sx-com: #8F897E;
+  /* chart helper roles */
+  --chart-1: var(--accent); --chart-muted: var(--muted); --grid: rgba(255, 240, 220, .07); --axis-ink: var(--faint);
+  --chart-span: .12; --rule: var(--line-1);
+  /* faces */
+  --sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --serif: 'Instrument Serif', 'Iowan Old Style', Georgia, serif;
+  --mono: 'Geist Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  /* the display face is a role, not a font: the editorial serif is the default and stays optional */
+  --font-display: var(--serif); --display-weight: 400; --display-tracking: -0.01em; --display-scale: 1;
+  --grain: .015; /* extremely subtle: 1.5 % */
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  color-scheme: dark;
+}
+/* no serif: one attribute (or ?display=sans in the prototype) moves every display line to Geist */
+:root[data-display="sans"] { --font-display: var(--sans); --display-weight: 600; --display-tracking: -0.028em; --display-scale: 0.86; }
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { background: var(--ground); }
+body { margin: 0; font: 400 14px/20px var(--sans); color: var(--ink); background: var(--ground); -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums; }
+h1, h2, h3, p, figure, ol, ul, dl, dd { margin: 0; }
+ol, ul { padding: 0; list-style: none; }
+a { color: inherit; text-decoration: none; }
+:where(button, input, textarea, select) { font: inherit; color: inherit; }
+button { cursor: pointer; }
+::selection { background: rgba(172, 164, 246, .22); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+input::placeholder, textarea::placeholder { color: var(--faint); }
+textarea, input { caret-color: var(--accent); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-3) transparent; }
+
+/* the only textured plane is the ground, and only barely */
+.grain { position: relative; isolation: isolate; }
+.grain::before { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='256' height='256'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 0.95 0 0 0 0 0.88 0 0 0 0.6 0'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)'/%3E%3C/svg%3E") 0 0 / 256px 256px; opacity: var(--grain); }
+
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* code: one block per line, copy from data-code */
+pre.code { margin: 0; font: 400 13px/22px var(--mono); color: var(--ink); white-space: pre; overflow-x: auto; tab-size: 2; }
+.k { color: var(--sx-kw); } .f { color: var(--sx-fn); } .s { color: var(--sx-str); } .n { color: var(--sx-num); } .c { color: var(--sx-com); } .p { color: var(--faint); }
+
+/* the logomark from the prototype */
+.mark { display: inline-flex; color: var(--ink); }
+
+/* reduced motion: gentler, not zero. Movement is removed per component in plus.css; fades stay. */

@@ -1,0 +1,79 @@
+/* Darkroom B+ · shell and base components (from variation B · Print, true-black-flat style).
+   The move: elevation by lightness alone (ground → card → nested), no borders or shadows on cards;
+   the active nav item is its label brightening; the one primary is an inverted cream pill.
+   Serif has one job per screen: the page title, the screen's one expressive line.
+   Frame: sidebar 232 + canvas 1208; column 880 centred → 164 + 880 + 164 = 1208. */
+:root {
+  --ground: #0B0A09; --card: #161412; --nested: #211E1B; --nested-2: #2A2723;
+  --side: 232px; --top: 64px; --col: 880px; --r: 16px; --r-sm: 12px; --gap: 16px;
+  --sx-str: #D8CBA6; --draft-line: #8F897E;
+}
+.app { display: grid; grid-template-columns: var(--side) minmax(0, 1fr); grid-template-rows: var(--top) minmax(0, 1fr); min-height: 100vh; }
+
+/* sidebar: wordmark, nav, utilities — on the ground, one 1px rule */
+.side { grid-row: 1 / -1; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; padding: 0 12px 16px; border-right: 1px solid var(--line-1); }
+.brand { height: var(--top); display: flex; align-items: center; gap: 9px; padding: 0 10px; }
+.brand .word { font: var(--display-weight) calc(22px * var(--display-scale))/24px var(--font-display); letter-spacing: var(--display-tracking); }
+.nav { display: flex; flex-direction: column; gap: 0; margin-top: 12px; }
+.nav a { display: flex; align-items: center; gap: 10px; height: 34px; padding: 0 10px; border-radius: 8px; color: var(--faint); font-size: 14px; }
+.nav a:hover { color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--ink); }
+.nav svg { width: 16px; height: 16px; }
+.side .bottom { margin-top: auto; display: flex; flex-direction: column; }
+.user { display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 10px; color: var(--muted); font-size: 13px; }
+.avatar { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; background: var(--nested); color: var(--muted); font-size: 11px; font-weight: 600; }
+
+/* top bar: the object's name on the left, the workspace switcher behind a full-height divider on the right */
+.top { display: flex; align-items: stretch; justify-content: space-between; border-bottom: 1px solid var(--line-1); padding-left: 29px; min-width: 0; }
+.top .where { display: flex; align-items: center; gap: 10px; font-size: 14px; color: var(--faint); min-width: 0; }
+.top .where a:hover { color: var(--ink); } .top .where b { font-weight: 500; color: var(--ink); white-space: nowrap; }
+.top .right { display: flex; align-items: center; gap: 18px; }
+.switcher { display: flex; align-items: center; gap: 10px; padding: 0 24px; border-left: 1px solid var(--line-1); height: 100%; color: var(--muted); font-size: 14px; background: none; border-top: 0; border-right: 0; border-bottom: 0; }
+.switcher .ws { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; background: var(--nested); color: var(--ink); font-size: 11px; font-weight: 600; }
+
+.canvas { min-width: 0; padding: 56px 29px 80px; }
+.col { max-width: var(--col); margin: 0 auto; }
+h1.title { font: var(--display-weight) calc(36px * var(--display-scale))/40px var(--font-display); letter-spacing: var(--display-tracking); }
+.lead { margin-top: 12px; font-size: 15px; line-height: 24px; color: var(--muted); max-width: 64ch; }
+.label { font-size: 13px; line-height: 18px; color: var(--faint); }
+.card { background: var(--card); border-radius: var(--r); padding: 32px; }
+.status { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--faint); }
+.dot.draft { background: transparent; border: 1.5px dashed var(--faint); width: 9px; height: 9px; }
+.dot.ok { background: var(--ok); } .dot.warn { background: var(--warn); }
+.link { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 3px; background: none; border: 0; padding: 0; font-size: inherit; }
+.link:hover { text-decoration-color: var(--muted); }
+
+/* buttons: full pills, decided once; one inverted primary per screen */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 36px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--nested); color: var(--ink); font-size: 14px; font-weight: 500; line-height: 1; white-space: nowrap; transition: background 120ms ease, color 120ms ease; }
+.btn svg { width: 14px; height: 14px; }
+.btn:hover { background: var(--nested-2); }
+.btn-primary { background: var(--ink); color: var(--ground); } .btn-primary:hover { background: #fff; }
+.btn-quiet { background: transparent; color: var(--muted); } .btn-quiet:hover { color: var(--ink); background: var(--nested); }
+.btn[aria-disabled="true"] { background: transparent; box-shadow: inset 0 0 0 1px var(--line-3); color: var(--faint); cursor: not-allowed; }
+.btn[data-copy] > svg:first-child { display: none; } .btn[data-copy].is-done > svg:first-child { display: inline; }
+.kbd { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; border-radius: 4px; box-shadow: inset 0 0 0 1px currentColor; font: 500 11px/1 var(--sans); opacity: .55; }
+
+/* segmented choice: a nested track, the chosen option one lightness step up */
+.seg { display: inline-flex; gap: 2px; padding: 3px; border-radius: 999px; background: var(--nested); }
+.seg button { height: 28px; padding: 0 13px; border: 0; border-radius: 999px; background: none; color: var(--faint); font-size: 13px; font-weight: 500; }
+.seg button:hover { color: var(--ink); }
+.seg button[aria-pressed="true"], .seg [role="tab"][aria-selected="true"] { background: var(--nested-2); color: var(--ink); }
+
+.rows > * { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: baseline; padding: 11px 0; }
+.rows .v { text-align: right; font-variant-numeric: tabular-nums; }
+
+@media (max-width: 720px) {
+  .app { grid-template-columns: 1fr; grid-template-rows: 56px minmax(0, 1fr); }
+  .side { display: none; }
+  .top { padding-left: 16px; }
+  .top .where .crumbs { display: none; }
+  .top .where::before { content: ""; width: 20px; height: 20px; flex: none; background: url('icons.svg#mark') center / contain no-repeat; display: none; }
+  .switcher { padding: 0 12px; } .switcher .wsname { display: none; }
+  .menu { display: inline-flex !important; }
+  .canvas { padding: 28px 16px 48px; }
+  h1.title { font-size: calc(30px * var(--display-scale)); line-height: 34px; }
+  .card { padding: 20px; border-radius: 14px; }
+  .btn { height: 44px; }
+}
+.menu { display: none; align-items: center; justify-content: center; width: 44px; height: 100%; background: none; border: 0; border-left: 1px solid var(--line-1); color: var(--muted); }

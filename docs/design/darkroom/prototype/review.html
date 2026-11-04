@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Net revenue after fees · Review · Analyticool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&family=Instrument+Serif&display=swap"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="shell.css"><link rel="stylesheet" href="components.css">
+<style>
+  /* Review — "Is this number right, and should I approve it?" */
+  .head { display: flex; justify-content: space-between; align-items: flex-start; gap: 24px; }
+  .hero { margin-top: 40px; display: flex; flex-direction: column; gap: 24px; }
+  .figrow { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .figure { margin-top: 6px; font: 500 40px/44px var(--sans); letter-spacing: -0.03em; }
+  .delta { margin-top: 8px; font-size: 14px; color: var(--muted); }
+  .sum { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; }
+  .sum .eq { font-size: 14px; color: var(--muted); } .sum .eq b { font-weight: 500; color: var(--ink); }
+  .sum .ok { display: inline-flex; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+  .chart { position: relative; margin: 0 -4px; }
+  .decision { margin-top: var(--gap); padding: 22px 24px 22px 32px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+  .decision .what { display: flex; gap: 12px; align-items: baseline; }
+  .decision strong { font-weight: 500; } .decision .why { color: var(--muted); }
+  .decision .acts { display: flex; gap: 8px; align-items: center; flex: none; }
+  .more { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: baseline; font-size: 14px; color: var(--faint); }
+  .more button { background: none; border: 0; padding: 0; color: var(--muted); font-size: 14px; }
+  .more button:hover { color: var(--ink); }
+  /* the drawer floats, so it may carry a shadow */
+  .drawer { position: fixed; top: 0; right: 0; bottom: 0; z-index: 30; width: 460px; overflow: auto; background: var(--overlay); box-shadow: 0 0 0 1px rgba(255, 240, 220, .06), -24px 0 64px rgba(0, 0, 0, .55); padding: 22px 28px 40px; }
+  .drawer .dh { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+  .drawer h2 { font-size: 16px; font-weight: 600; }
+  .drawer .seg { margin-bottom: 24px; }
+  .drawer section + section { margin-top: 28px; }
+  .drawer .label { display: block; margin-bottom: 4px; }
+  .drawer .rows > * { border-top: 1px solid var(--line-1); } .drawer .rows > :first-child { border-top: 0; }
+  .drawer .well { background: var(--ground); border-radius: var(--r-sm); padding: 16px; }
+  .drawer pre.code { font-size: 12.5px; line-height: 20px; }
+  .skel { background: var(--nested); border-radius: 6px; }
+  .scrim { position: fixed; inset: 0; z-index: 25; background: rgba(0, 0, 0, .35); }
+  .scrim { opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 160ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s 160ms; }
+  body.panel-open .scrim { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 200ms cubic-bezier(0.23, 1, 0.32, 1), visibility 0s; }
+  @media (max-width: 720px) {
+    .hero { margin-top: 28px; } .sum { align-items: flex-start; text-align: left; }
+    .decision { flex-direction: column; align-items: stretch; padding: 20px; gap: 16px; }
+    .decision .acts { flex-wrap: wrap; } .decision .acts .btn { flex: 1; }
+    .drawer { width: 100%; padding: 18px 16px 32px; }
+    .head .status { display: none; }
+  }
+</style>
+</head>
+<body class="grain" data-state="issue">
+<div class="app">
+  <aside class="side" aria-label="Studio">
+    <a class="brand" href="index.html" aria-label="Analyticool home"><svg width="20" height="20" aria-hidden="true"><use href="icons.svg#mark"/></svg><span class="word">analyticool</span></a>
+    <nav class="nav" aria-label="Studio">
+      <a href="index.html"><svg aria-hidden="true"><use href="icons.svg#plus"/></svg>New metric</a>
+      <a href="review.html" aria-current="page"><svg aria-hidden="true"><use href="icons.svg#metrics"/></svg>Metrics</a>
+      <a href="#"><svg aria-hidden="true"><use href="icons.svg#sources"/></svg>Sources</a>
+      <a href="#"><svg aria-hidden="true"><use href="icons.svg#settings"/></svg>Settings</a>
+    </nav>
+    <div class="bottom nav">
+      <a href="#"><svg aria-hidden="true"><use href="icons.svg#docs"/></svg>Docs</a>
+      <div class="user"><span>Bruno S.</span><span class="avatar">BS</span></div>
+    </div>
+  </aside>
+  <header class="top">
+    <div class="where"><span class="crumbs"><a href="#">Metrics</a> <span aria-hidden="true">/</span></span> <b>Net revenue after fees</b></div>
+    <div class="right"><ol class="stages" aria-label="Metric creation, step 3 of 4"><li class="done"><a href="index.html">Describe</a></li><li class="done"><a href="clarify.html">Clarify</a></li><li class="current" aria-current="step"><span>Review</span></li><li class="next"><span>Embed</span></li></ol><button class="switcher" aria-label="Workspace: Lumen Labs. Switch"><span class="ws">L</span><span class="wsname">Lumen Labs</span><svg width="10" height="10" aria-hidden="true"><use href="icons.svg#chev"/></svg></button><button class="menu" aria-label="Menu"><svg width="16" height="16" aria-hidden="true"><use href="icons.svg#menu"/></svg></button></div>
+  </header>
+  <main class="canvas">
+    <div class="col">
+      <div class="head">
+        <h1 class="title">Net revenue after fees</h1>
+        <span class="status" data-when="issue ready" style="margin-top:12px"><span class="dot draft"></span>Draft</span>
+        <span class="status" data-when="approved" hidden style="margin-top:12px"><span class="dot ok"></span>Approved · version 1</span>
+      </div>
+      <p class="lead">What customers paid you each month, minus refunds and Stripe’s processing fees, in US dollars. Refunds count in the month they happen, and other currencies convert at the rate Stripe paid you. <a class="link" href="clarify.html">Change answers</a></p>
+
+      <section class="card hero" aria-label="October result" data-when="loading" hidden aria-busy="true">
+        <div class="figrow"><div><span class="label">October 2026</span><p class="skel" style="width:220px;height:44px;margin-top:6px"></p><p class="skel" style="width:140px;height:16px;margin-top:10px"></p></div><div class="sum"><p class="skel" style="width:300px;height:16px"></p><p class="skel" style="width:220px;height:14px"></p></div></div>
+        <div class="skel" style="height:260px"></div>
+        <p class="label">Running on your full Stripe history. Usually under ten seconds.</p>
+      </section>
+      <section class="card hero" aria-label="October result" data-when="issue ready approved error">
+        <div class="figrow">
+          <div>
+            <span class="label" data-when="issue ready approved">October 2026</span><span class="label" data-when="error" hidden>October 2026 · last good result, today 09:14</span>
+            <p class="figure" data-fig="october.net"></p>
+            <p class="delta"><span data-fig="change" data-f="pct"></span> vs September</p>
+          </div>
+          <div class="sum" data-when="issue ready approved">
+            <p class="eq"><b>$538,420</b> charges − <b>$8,130</b> refunds − <b>$16,906</b> fees</p>
+            <p class="ok"><span class="dot ok"></span>Matches Stripe payouts within 0.02%</p>
+          </div>
+        </div>
+        <div class="chart" data-chart data-height="260"></div>
+        <p class="label" data-when="issue ready error">Dashed until you approve. Ran on your full Stripe history.</p>
+        <p class="label" data-when="approved" hidden>Version 1, approved by you. Embeds read this exact line.</p>
+      </section>
+
+      <section class="card decision" aria-label="Next decision">
+        <div class="what err-wrap" data-when="error" hidden><span class="dot err"></span><div class="err-card"><p><strong>We couldn’t read your refunds.</strong> <span class="why">The Stripe key Analyticool uses can’t access refunds, so net revenue would be overstated. Last good data: today 09:14.</span></p><button class="disclose-btn" style="margin-top:2px" data-disclose aria-expanded="false" aria-controls="err-tech">Technical details<svg aria-hidden="true"><use href="icons.svg#chev"/></svg></button><pre class="code" id="err-tech" hidden style="font-size:12px;line-height:19px;color:var(--muted)">stripe.refunds.list → 403 permission_denied
+key rk_live_…4f2a is missing refunds:read</pre></div></div>
+        <div class="acts" data-when="error" hidden><button class="btn btn-quiet" data-go="issue">Continue without refunds</button><button class="btn btn-primary">Update Stripe access</button></div>
+        <div class="what" data-when="issue"><span class="dot warn"></span><p><strong>3 refunds don’t match any charge.</strong> <span class="why">$412 in total, likely leftover test data.</span></p></div>
+        <div class="acts" data-when="issue">
+          <button class="btn btn-quiet" data-panel-open="drawer" data-tab="p-checks">See them</button>
+          <button class="btn" data-go="ready">Exclude them</button>
+          <button class="btn" aria-disabled="true" title="Resolve the refunds first">Approve</button>
+        </div>
+        <div class="what" data-when="ready" hidden><span class="dot ok"></span><p><strong>Test refunds excluded.</strong> <button class="link" data-go="issue">Undo</button><span class="why"> · Approving locks this as version 1.</span></p></div>
+        <div class="acts" data-when="ready" hidden><button class="btn btn-primary" data-go="approved" data-busy="Approving" data-ms="700"><span class="spin" aria-hidden="true"></span><span data-label>Approve metric</span> <span class="kbd">⌘↵</span></button></div>
+        <div class="what" data-when="approved" hidden><span class="dot ok"></span><p class="note-line"><strong>Version 1 is live for embeds.</strong> <span class="why">Later edits become version 2.</span> <span data-undo="10" hidden><button class="link" data-go="ready">Undo</button> <span class="label" data-undo-left></span></span></p></div>
+        <div class="acts" data-when="approved" hidden><a class="btn btn-primary" href="embed.html" data-focus-after-approve>Add it to your app <svg aria-hidden="true"><use href="icons.svg#arrow-right"/></svg></a></div>
+      </section>
+
+      <p class="more"><span>How it’s calculated</span>
+        <button data-panel-open="drawer" data-tab="p-rec" aria-controls="drawer" aria-expanded="false">Reconciliation</button>
+        <button data-panel-open="drawer" data-tab="p-def">Definition</button>
+        <button data-panel-open="drawer" data-tab="p-sql">SQL</button>
+        <button data-panel-open="drawer" data-tab="p-src">Sources</button>
+        <button data-panel-open="drawer" data-tab="p-checks"><span data-when="error" hidden>Checks · not run</span><span data-when="issue loading">Checks · 6 of 7 passed</span><span data-when="ready approved" hidden>Checks · 7 of 7 passed</span></button>
+      </p>
+    </div>
+  </main>
+</div>
+<div class="scrim" data-panel-scrim></div>
+<aside class="drawer" id="drawer" data-panel data-tabs hidden aria-label="How it’s calculated">
+  <div class="dh"><h2>How it’s calculated</h2><button class="btn btn-quiet" style="width:36px;padding:0" data-panel-close aria-label="Close"><svg aria-hidden="true"><use href="icons.svg#close"/></svg></button></div>
+  <div class="seg" role="tablist" aria-label="Details">
+    <button role="tab" aria-selected="true" aria-controls="p-rec">Reconciliation</button><button role="tab" aria-selected="false" aria-controls="p-def" tabindex="-1">Definition</button><button role="tab" aria-selected="false" aria-controls="p-sql" tabindex="-1">SQL</button><button role="tab" aria-selected="false" aria-controls="p-src" tabindex="-1">Sources</button><button role="tab" aria-selected="false" aria-controls="p-checks" tabindex="-1">Checks</button>
+  </div>
+  <div role="tabpanel" id="p-rec" class="ledger">
+    <section><span class="label">October 2026, in US dollars</span>
+      <div class="rows">
+        <div><span>Charges</span><span class="v">$538,420</span></div>
+        <div><span>Refunds</span><span class="v">−$8,130</span></div>
+        <div><span>Stripe fees</span><span class="v">−$16,906</span></div>
+        <div class="total"><span>Net revenue</span><span class="v">$513,384</span></div>
+      </div>
+    </section>
+    <section><span class="label">Against Stripe payouts</span>
+      <div class="rows">
+        <div><span>Stripe paid out</span><span class="v">$513,291</span></div>
+        <div><span>Difference</span><span class="v">+$93 · 0.02%</span></div>
+      </div>
+      <p class="check"><span class="dot ok"></span>Net revenue matches what Stripe paid out to within 0.02%.</p>
+    </section>
+    <section><span class="label">Your answers</span><ul class="rows"><li><span>Refunds count in the month they happened</span><a class="link" href="clarify.html">Change</a></li><li><span>Currencies convert at the rate Stripe paid you</span><a class="link" href="clarify.html">Change</a></li></ul></section>
+  </div>
+  <div role="tabpanel" id="p-def" hidden>
+    <section><span class="label">Assumptions</span><ul class="rows"><li><span>Only successful, live charges</span></li><li><span>Sales tax isn’t revenue</span></li><li><span>Dispute fees count as payment fees</span></li><li><span>Months start at midnight UTC</span></li></ul></section>
+      </div>
+  <div role="tabpanel" id="p-sql" hidden>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><span class="label">Snowflake · read-only</span><button class="btn btn-quiet" style="height:28px" data-copy="#sql"><svg aria-hidden="true"><use href="icons.svg#check"/></svg><span data-label>Copy</span></button></div>
+    <div class="well"><pre class="code" id="sql"><span class="k">select</span> month,
+  <span class="f">sum</span>(gross) <span class="p">-</span> <span class="f">sum</span>(refunds) <span class="p">-</span> <span class="f">sum</span>(fees) <span class="k">as</span> net
+<span class="k">from</span> (
+  <span class="k">select</span> <span class="f">date_trunc</span>(<span class="s">'month'</span>, c.created),
+    (c.amount_captured <span class="p">-</span> c.amount_tax)
+      <span class="p">*</span> bt.exchange_rate, <span class="n">0</span>, bt.fee
+  <span class="k">from</span> stripe.charges c
+  <span class="k">join</span> stripe.balance_transactions bt
+    <span class="k">on</span> bt.id <span class="p">=</span> c.balance_transaction
+  <span class="k">where</span> c.status <span class="p">=</span> <span class="s">'succeeded'</span>
+    <span class="k">and</span> c.livemode
+  <span class="k">union all</span>
+  <span class="k">select</span> <span class="f">date_trunc</span>(<span class="s">'month'</span>, r.created),
+    <span class="n">0</span>, r.amount <span class="p">*</span> rbt.exchange_rate, <span class="n">0</span>
+  <span class="k">from</span> stripe.refunds r
+  <span class="k">join</span> stripe.balance_transactions rbt
+    <span class="k">on</span> rbt.id <span class="p">=</span> r.balance_transaction
+) t (month, gross, refunds, fees)
+<span class="k">group by</span> <span class="n">1</span> <span class="k">order by</span> <span class="n">1</span>;</pre></div>
+  </div>
+  <div role="tabpanel" id="p-src" hidden>
+    <section><span class="label">Tables · Stripe, synced 4 min ago</span><ul class="rows"><li><span>stripe.charges</span><span class="v">412,880 rows</span></li><li><span>stripe.refunds</span><span class="v">6,214 rows</span></li><li><span>stripe.balance_transactions</span><span class="v">1.84M rows</span></li></ul></section>
+    <section><span class="label">Joins</span><ul class="rows"><li><span>Charges → balance transactions</span><span class="v">100%</span></li><li><span>Refunds → balance transactions</span><span class="v">100%</span></li><li><span>Refunds → charges</span><span class="v" data-when="issue">99.95%</span><span class="v" data-when="ready approved" hidden>100% · 3 excluded</span></li></ul></section>
+  </div>
+  <div role="tabpanel" id="p-checks" hidden>
+    <span class="label">Ran 1.3 s ago on 412,880 charges</span>
+    <ul class="rows">
+      <li><span>Refunds match a charge<span class="label" style="display:block" data-when="issue">re_3Qx…a81 · re_3Qx…c07 · re_3Qy…19f, $412 together</span><span class="label" style="display:block" data-when="ready approved" hidden>3 orphan refunds excluded ($412)</span></span><span class="v" data-when="issue" style="color:var(--warn)">Needs you</span><span class="v" data-when="ready approved" hidden style="color:var(--ok)">Passed</span></li>
+      <li><span>Matches Stripe payouts<span class="label" style="display:block">October within 0.02% of $513,291 paid out</span></span><span class="v" style="color:var(--ok)">Passed</span></li>
+      <li><span>No duplicate charges<span class="label" style="display:block">412,880 charges, 0 duplicates</span></span><span class="v" style="color:var(--ok)">Passed</span></li>
+      <li><span>Every charge has a fee record<span class="label" style="display:block">100.0% joined</span></span><span class="v" style="color:var(--ok)">Passed</span></li>
+      <li><span>All currencies converted<span class="label" style="display:block">14.2% non-USD, all at settlement rate</span></span><span class="v" style="color:var(--ok)">Passed</span></li>
+      <li><span>Refunds placed by month issued<span class="label" style="display:block">1,284 refunds</span></span><span class="v" style="color:var(--ok)">Passed</span></li>
+      <li><span>Test data excluded<span class="label" style="display:block">3,912 test-mode charges filtered</span></span><span class="v" style="color:var(--ok)">Passed</span></li>
+    </ul>
+  </div>
+</aside>
+<p class="sr" id="live" role="status" aria-live="polite"></p>
+<script src="data.js"></script><script src="charts.js"></script><script src="app.js"></script>
+</body>
+</html>
