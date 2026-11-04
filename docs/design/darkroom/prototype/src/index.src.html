@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>New metric · Analyticool</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@400;500&family=Instrument+Serif&display=swap"><link rel="stylesheet" href="base.css"><link rel="stylesheet" href="shell.css"><link rel="stylesheet" href="components.css">
+<style>
+  /* Start — "What do you want to measure?" One serif line, one composer, two quiet lists. */
+  .col { --col: 720px; }
+  .canvas { padding-top: 96px; }
+  h1.title { font-size: calc(40px * var(--display-scale)); line-height: 44px; }
+  .composer { margin-top: 32px; background: var(--card); border-radius: var(--r); transition: box-shadow 160ms ease; }
+  .composer:focus-within { box-shadow: 0 0 0 1px rgba(172, 164, 246, .45), 0 0 0 5px rgba(172, 164, 246, .08); }
+  .composer textarea { display: block; width: 100%; min-height: 120px; resize: none; border: 0; outline: 0; background: none; padding: 24px 28px 6px; font-size: 19px; line-height: 30px; }
+  .composer .bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px 12px 16px; }
+  .src { display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 12px; border-radius: 999px; border: 0; background: var(--nested); color: var(--muted); font-size: 13px; }
+  .src:hover { color: var(--ink); } .src svg { width: 13px; height: 13px; }
+  .blocks { margin-top: 56px; display: grid; grid-template-columns: 1fr 1fr; gap: 48px; }
+  .blocks h2 { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  .ideas button { width: 100%; display: block; padding: 10px 0; border: 0; background: none; text-align: left; }
+  .ideas .t { display: block; font-size: 15px; line-height: 22px; } .ideas .from { display: block; font-size: 13px; color: var(--faint); }
+  .ideas button:hover .t { color: #fff; text-decoration: underline; text-decoration-color: var(--line-3); text-underline-offset: 3px; }
+  .recent > a { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 16px; padding: 10px 0; }
+  .recent .nm { font-size: 15px; line-height: 22px; } .recent .meta { font-size: 13px; color: var(--faint); display: flex; gap: 6px; align-items: center; }
+  .recent .v { grid-row: 1; grid-column: 2; text-align: right; font-size: 15px; line-height: 22px; }
+  .recent > a:hover .nm { color: #fff; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; }
+  @media (max-width: 720px) { .canvas { padding-top: 32px; } h1.title { font-size: calc(30px * var(--display-scale)); line-height: 34px; } .blocks { grid-template-columns: 1fr; gap: 32px; margin-top: 40px; } .composer textarea { padding: 18px 18px 4px; font-size: 17px; line-height: 26px; } }
+</style>
+</head>
+<body class="grain">
+<div class="app">
+  {{SHELL}}
+  <main class="canvas">
+    <div class="col">
+      <h1 class="title">What would you like to measure?</h1>
+      <p class="lead">Describe it in plain words. We ask about anything ambiguous before building it.</p>
+      <div class="composer">
+        <label for="q" class="sr">Describe a metric</label>
+        <textarea id="q" rows="3" placeholder="Monthly net revenue after payment fees"></textarea>
+        <div class="bar">
+          <button class="src" aria-label="Sources: Stripe and Snowflake. Change"><svg aria-hidden="true"><use href="icons.svg#sources"/></svg>Stripe, Snowflake<svg aria-hidden="true" style="width:10px;height:10px"><use href="icons.svg#chev"/></svg></button>
+          <a id="send" class="btn btn-primary" href="clarify.html" aria-disabled="true"><span class="spin" aria-hidden="true"></span><span data-label>Continue</span> <span class="kbd">↵</span></a>
+        </div>
+      </div>
+      <div class="blocks">
+        <section aria-labelledby="ideas-t">
+          <h2 id="ideas-t">Your Stripe data can answer</h2>
+          <ul class="ideas">
+            <li><button data-idea="Net revenue after fees"><span class="t">Net revenue after fees</span><span class="from">Charges, refunds and fees</span></button></li>
+            <li><button data-idea="Refund rate by month"><span class="t">Refund rate by month</span><span class="from">Refunds against charges</span></button></li>
+            <li><button data-idea="Active customers by plan"><span class="t">Active customers by plan</span><span class="from">Subscriptions</span></button></li>
+          </ul>
+        </section>
+        <section aria-labelledby="recent-t" class="recent">
+          <div class="head"><h2 id="recent-t">Recent</h2><a class="link label" href="#" style="color:var(--muted)">All metrics</a></div>
+          <a href="review.html"><span class="nm">Net revenue after fees</span><span class="meta"><span class="dot draft"></span>Draft · edited 2 min ago</span><span class="v">$513,384</span></a>
+          <a href="#"><span class="nm">Gross MRR</span><span class="meta">Version 3 · approved 2 Oct</span><span class="v">$486,200</span></a>
+          <a href="#"><span class="nm">Active customers</span><span class="meta">Version 1 · approved 14 Sep</span><span class="v">2,184</span></a>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+<script src="data.js"></script><script src="app.js"></script>
+</body>
+</html>

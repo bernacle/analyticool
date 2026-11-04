@@ -12,6 +12,8 @@ export default tseslint.config(
       "coverage/**",
       "test-results/**",
       "playwright-report/**",
+      ".claude/**",
+      "docs/design/**/prototype/**",
     ],
   },
   js.configs.recommended,

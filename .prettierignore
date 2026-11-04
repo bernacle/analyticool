@@ -5,3 +5,6 @@ coverage/
 pnpm-lock.yaml
 next-env.d.ts
 LICENSE
+.claude/
+skills-lock.json
+docs/design/darkroom/prototype/
