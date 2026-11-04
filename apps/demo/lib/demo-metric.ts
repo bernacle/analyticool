@@ -2,6 +2,7 @@ import {
   calculateMonthlyRevenue,
   monthlyRevenueDefinition,
   type Invoice,
+  type VersionedMonthlyRevenueDefinition,
 } from "@analyticool/core";
 
 // Explicitly fictional workspaces. This is a fixture selection, not authorization.
@@ -62,8 +63,10 @@ const fixtures: ReadonlyArray<Invoice & { workspaceId: string }> = [
   },
 ];
 
-/** No request parameters: the local demo always selects this fixed synthetic workspace. */
-export function getDemoMetric() {
+/** The definition can be versioned; workspace selection always stays fixed. */
+export function getDemoMetric(
+  definition: VersionedMonthlyRevenueDefinition = monthlyRevenueDefinition,
+) {
   const invoices = fixtures
     .filter((row) => row.workspaceId === demoWorkspace)
     .map(({ id, amountCents, currency, status, paidAt }) => ({
@@ -73,7 +76,7 @@ export function getDemoMetric() {
       status,
       paidAt,
     }));
-  return calculateMonthlyRevenue(monthlyRevenueDefinition, {
+  return calculateMonthlyRevenue(definition, {
     asOf: demoAsOf,
     invoices,
   });

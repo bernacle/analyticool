@@ -20,6 +20,15 @@ export type MonthlyRevenueDefinition = z.infer<
   typeof monthlyRevenueDefinitionSchema
 >;
 
+/** The v1 contract remains available; publication can issue later revisions. */
+export const versionedMonthlyRevenueDefinitionSchema =
+  monthlyRevenueDefinitionSchema.extend({
+    version: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
+  });
+export type VersionedMonthlyRevenueDefinition = z.infer<
+  typeof versionedMonthlyRevenueDefinitionSchema
+>;
+
 export const monthlyRevenueDefinition: Readonly<MonthlyRevenueDefinition> =
   Object.freeze(
     monthlyRevenueDefinitionSchema.parse({
@@ -97,7 +106,7 @@ function completeMonths(asOf: string): string[] {
 export const monthlyRevenueResultSchema = z
   .strictObject({
     metricId: z.literal("monthly-revenue"),
-    metricVersion: z.literal(1),
+    metricVersion: z.number().int().positive().max(Number.MAX_SAFE_INTEGER),
     asOf: asOfSchema,
     currency: z.literal("USD"),
     timezone: z.literal("UTC"),
@@ -122,10 +131,10 @@ export type MonthlyRevenueResult = z.infer<typeof monthlyRevenueResultSchema>;
 
 /** Pure, deterministic calculation over caller-supplied, already-authorized rows. */
 export function calculateMonthlyRevenue(
-  definition: MonthlyRevenueDefinition,
+  definition: VersionedMonthlyRevenueDefinition,
   input: unknown,
 ): MonthlyRevenueResult {
-  const metric = monthlyRevenueDefinitionSchema.parse(definition);
+  const metric = versionedMonthlyRevenueDefinitionSchema.parse(definition);
   const { invoices, asOf } = executionInputSchema.parse(input);
   const totals = new Map(completeMonths(asOf).map((month) => [month, 0]));
 
