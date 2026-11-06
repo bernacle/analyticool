@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:smoke": "playwright test",
+    "verify:net-receipts": "node scripts/verify-net-receipts.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check ."
   },

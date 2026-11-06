@@ -1,0 +1,67 @@
+{
+  "provenance": "Handwritten BRU-482 / BRU-483 arithmetic, independent of the candidate calculator. Do not regenerate from candidate output.",
+  "rationale": [
+    "January: p1 10000 minus old-payment refund r4 3000 minus f1/f2 300+50 = 6650.",
+    "February: p2 20000 (UTC offset) minus partial refunds r1/r2 1000+500 minus f3 600 = 17900.",
+    "March: no captured payment, minus r3 2000 = -2000; failed p3 excluded.",
+    "April and May: declared-complete streams contain no eligible activity.",
+    "June: p4 30000 minus f4 900 = 29100; pending rp excluded.",
+    "Totals: 60000 - 6500 - 1850 = 51650; July and Orbit excluded independently."
+  ],
+  "points": [
+    {
+      "month": "2026-01",
+      "capturedCents": 10000,
+      "settledRefundCents": 3000,
+      "postedFeeCents": 350,
+      "netCents": 6650
+    },
+    {
+      "month": "2026-02",
+      "capturedCents": 20000,
+      "settledRefundCents": 1500,
+      "postedFeeCents": 600,
+      "netCents": 17900
+    },
+    {
+      "month": "2026-03",
+      "capturedCents": 0,
+      "settledRefundCents": 2000,
+      "postedFeeCents": 0,
+      "netCents": -2000
+    },
+    {
+      "month": "2026-04",
+      "capturedCents": 0,
+      "settledRefundCents": 0,
+      "postedFeeCents": 0,
+      "netCents": 0
+    },
+    {
+      "month": "2026-05",
+      "capturedCents": 0,
+      "settledRefundCents": 0,
+      "postedFeeCents": 0,
+      "netCents": 0
+    },
+    {
+      "month": "2026-06",
+      "capturedCents": 30000,
+      "settledRefundCents": 0,
+      "postedFeeCents": 900,
+      "netCents": 29100
+    }
+  ],
+  "totals": {
+    "capturedCents": 60000,
+    "settledRefundCents": 6500,
+    "postedFeeCents": 1850,
+    "netCents": 51650
+  },
+  "orbitFebruary": {
+    "capturedCents": 999999,
+    "settledRefundCents": 12345,
+    "postedFeeCents": 7777,
+    "netCents": 979877
+  }
+}
