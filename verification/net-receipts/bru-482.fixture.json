@@ -1,0 +1,279 @@
+{
+  "sourceId": "synthetic-billing-net-v1",
+  "research": "docs/research/competitors/quill-vs-analyticool.md#reproduction-appendix",
+  "mapping": {
+    "amounts": "All synthetic amounts are USD integer cents. Payments inherit amount and tenant from charges.",
+    "payments": "paid_at -> capturedAt; failed timestamps retained but ignored.",
+    "refunds": "Unnamed event timestamp -> settledAt; pending timestamps retained but ignored.",
+    "fees": "Research fee status settled -> posted ONLY in this synthetic fixture; unnamed event timestamp -> postedAt.",
+    "events": "All research events are original; corrections and reversals unsupported.",
+    "completeness": "Caller-declared complete synthetic snapshot including historical parents; no production guarantee."
+  },
+  "organizations": ["acme", "orbit"],
+  "users": {
+    "u1": "acme",
+    "u2": "acme",
+    "u3": "orbit"
+  },
+  "chargeUsers": {
+    "c1": "u1",
+    "c2": "u2",
+    "c3": "u1",
+    "c4": "u2",
+    "old": "u1",
+    "next": "u2",
+    "unpaid": "u1",
+    "other": "u3"
+  },
+  "input": {
+    "asOf": "2026-07-01",
+    "tenantId": "acme",
+    "charges": {
+      "completeness": "declared-complete",
+      "rows": [
+        {
+          "id": "c1",
+          "tenantId": "acme",
+          "amountCents": 10000,
+          "currency": "USD"
+        },
+        {
+          "id": "c2",
+          "tenantId": "acme",
+          "amountCents": 20000,
+          "currency": "USD"
+        },
+        {
+          "id": "c3",
+          "tenantId": "acme",
+          "amountCents": 5000,
+          "currency": "USD"
+        },
+        {
+          "id": "c4",
+          "tenantId": "acme",
+          "amountCents": 30000,
+          "currency": "USD"
+        },
+        {
+          "id": "old",
+          "tenantId": "acme",
+          "amountCents": 8000,
+          "currency": "USD"
+        },
+        {
+          "id": "next",
+          "tenantId": "acme",
+          "amountCents": 9000,
+          "currency": "USD"
+        },
+        {
+          "id": "unpaid",
+          "tenantId": "acme",
+          "amountCents": 7000,
+          "currency": "USD"
+        },
+        {
+          "id": "other",
+          "tenantId": "orbit",
+          "amountCents": 999999,
+          "currency": "USD"
+        }
+      ]
+    },
+    "payments": {
+      "completeness": "declared-complete",
+      "rows": [
+        {
+          "id": "p1",
+          "chargeId": "c1",
+          "eventType": "original",
+          "status": "captured",
+          "capturedAt": "2026-01-15T12:00:00Z"
+        },
+        {
+          "id": "p2",
+          "chargeId": "c2",
+          "eventType": "original",
+          "status": "captured",
+          "capturedAt": "2026-01-31T23:30:00-02:00"
+        },
+        {
+          "id": "p3",
+          "chargeId": "c3",
+          "eventType": "original",
+          "status": "failed",
+          "capturedAt": "2026-03-05T12:00:00Z"
+        },
+        {
+          "id": "p4",
+          "chargeId": "c4",
+          "eventType": "original",
+          "status": "captured",
+          "capturedAt": "2026-06-30T23:59:59Z"
+        },
+        {
+          "id": "po",
+          "chargeId": "old",
+          "eventType": "original",
+          "status": "captured",
+          "capturedAt": "2025-12-15T12:00:00Z"
+        },
+        {
+          "id": "pn",
+          "chargeId": "next",
+          "eventType": "original",
+          "status": "captured",
+          "capturedAt": "2026-07-01T00:00:00Z"
+        },
+        {
+          "id": "pb",
+          "chargeId": "other",
+          "eventType": "original",
+          "status": "captured",
+          "capturedAt": "2026-02-10T12:00:00Z"
+        }
+      ]
+    },
+    "refunds": {
+      "completeness": "declared-complete",
+      "rows": [
+        {
+          "id": "r1",
+          "tenantId": "acme",
+          "paymentId": "p1",
+          "eventType": "original",
+          "status": "settled",
+          "settledAt": "2026-02-10T12:00:00Z",
+          "amountCents": 1000,
+          "currency": "USD"
+        },
+        {
+          "id": "r2",
+          "tenantId": "acme",
+          "paymentId": "p1",
+          "eventType": "original",
+          "status": "settled",
+          "settledAt": "2026-02-11T12:00:00Z",
+          "amountCents": 500,
+          "currency": "USD"
+        },
+        {
+          "id": "r3",
+          "tenantId": "acme",
+          "paymentId": "p2",
+          "eventType": "original",
+          "status": "settled",
+          "settledAt": "2026-03-10T12:00:00Z",
+          "amountCents": 2000,
+          "currency": "USD"
+        },
+        {
+          "id": "r4",
+          "tenantId": "acme",
+          "paymentId": "po",
+          "eventType": "original",
+          "status": "settled",
+          "settledAt": "2026-01-05T12:00:00Z",
+          "amountCents": 3000,
+          "currency": "USD"
+        },
+        {
+          "id": "rp",
+          "tenantId": "acme",
+          "paymentId": "p4",
+          "eventType": "original",
+          "status": "pending",
+          "settledAt": "2026-06-20T12:00:00Z",
+          "amountCents": 4000,
+          "currency": "USD"
+        },
+        {
+          "id": "rn",
+          "tenantId": "acme",
+          "paymentId": "p4",
+          "eventType": "original",
+          "status": "settled",
+          "settledAt": "2026-07-02T12:00:00Z",
+          "amountCents": 1000,
+          "currency": "USD"
+        },
+        {
+          "id": "rb",
+          "tenantId": "orbit",
+          "paymentId": "pb",
+          "eventType": "original",
+          "status": "settled",
+          "settledAt": "2026-02-11T12:00:00Z",
+          "amountCents": 12345,
+          "currency": "USD"
+        }
+      ]
+    },
+    "fees": {
+      "completeness": "declared-complete",
+      "rows": [
+        {
+          "id": "f1",
+          "tenantId": "acme",
+          "paymentId": "p1",
+          "eventType": "original",
+          "status": "posted",
+          "postedAt": "2026-01-15T12:00:00Z",
+          "amountCents": 300,
+          "currency": "USD"
+        },
+        {
+          "id": "f2",
+          "tenantId": "acme",
+          "paymentId": "p1",
+          "eventType": "original",
+          "status": "posted",
+          "postedAt": "2026-01-16T12:00:00Z",
+          "amountCents": 50,
+          "currency": "USD"
+        },
+        {
+          "id": "f3",
+          "tenantId": "acme",
+          "paymentId": "p2",
+          "eventType": "original",
+          "status": "posted",
+          "postedAt": "2026-02-01T12:00:00Z",
+          "amountCents": 600,
+          "currency": "USD"
+        },
+        {
+          "id": "f4",
+          "tenantId": "acme",
+          "paymentId": "p4",
+          "eventType": "original",
+          "status": "posted",
+          "postedAt": "2026-06-30T23:59:59Z",
+          "amountCents": 900,
+          "currency": "USD"
+        },
+        {
+          "id": "fn",
+          "tenantId": "acme",
+          "paymentId": "pn",
+          "eventType": "original",
+          "status": "posted",
+          "postedAt": "2026-07-01T00:00:00Z",
+          "amountCents": 270,
+          "currency": "USD"
+        },
+        {
+          "id": "fb",
+          "tenantId": "orbit",
+          "paymentId": "pb",
+          "eventType": "original",
+          "status": "posted",
+          "postedAt": "2026-02-10T12:00:00Z",
+          "amountCents": 7777,
+          "currency": "USD"
+        }
+      ]
+    }
+  }
+}

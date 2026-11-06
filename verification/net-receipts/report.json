@@ -1,0 +1,4895 @@
+{
+  "schemaVersion": 1,
+  "method": "bounded-local-independent-fixture-comparison",
+  "serialization": "fixed-schema-json-v1; file references hash raw bytes; input rows sorted by unique stream ID",
+  "definition": {
+    "metricId": "operational-net-receipts",
+    "metricVersion": 1,
+    "digest": "sha256:5e43fd2494bf230380dcd240bcd3f08d56e9e68cf6028d07c997f33521c587f7",
+    "value": {
+      "id": "operational-net-receipts",
+      "version": 1,
+      "name": "Operational net receipts",
+      "calculation": "captured-minus-settled-refunds-minus-posted-fees-v1",
+      "currency": "USD",
+      "unit": "integer-cents",
+      "timezone": "UTC",
+      "window": "last-six-complete-calendar-months",
+      "sourceContract": "net-receipts-event-streams-v1",
+      "attribution": "capture-settlement-posting-month-including-historical-parents",
+      "aggregation": "independent-streams-then-monthly-sum",
+      "ownership": "adjustment-tenant-and-parent-charge-tenant-must-match",
+      "missingParents": "block",
+      "duplicates": "reject-per-stream",
+      "corrections": "unsupported-block",
+      "emptyMonths": "zero-only-with-all-streams-declared-complete",
+      "scope": "operational-only-no-fx-proration-tax-subtraction-or-payout-reconciliation"
+    }
+  },
+  "implementation": {
+    "digest": "sha256:314ba55c58602dc232bcbd3cc2a162ce577ff0218bf83969b890c1288685dd4c",
+    "policy": "captured-minus-settled-refunds-minus-posted-fees-v1",
+    "runtime": "v24.21.0",
+    "files": [
+      {
+        "path": ".nvmrc",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:73fb1b615e2043a933be1c0895cde4358036acc28d785692509b822aa53c761f"
+      },
+      {
+        "path": "package.json",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:04e5c0292a3364389524beb367e76d6eb8e33897e9a1a4a782da3600c1987ac3"
+      },
+      {
+        "path": "packages/core/package.json",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:c7bda95c309089cdb315877820d2652a093e2e6c4bf3ab54f6a6afb56432bb59"
+      },
+      {
+        "path": "packages/core/src/net-receipts.ts",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:a40b7a2d48c3fdb6a7d2f70f32f6f32639401c667ce7127cce2250b7998a5b7f"
+      },
+      {
+        "path": "pnpm-lock.yaml",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:0548c9090aaf24a22125f4e4da328ba486ecd9e3a817009f3081133c9cb644c7"
+      },
+      {
+        "path": "scripts/verify-net-receipts.mjs",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:871f6755d0971f82cfc00438efda269c28c1fda77812947316a589657094c556"
+      },
+      {
+        "path": "tsconfig.base.json",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:6e7785ce6f95562ec01eb84c8de3f06b38fe88486fd11381d1e33d8bb550819a"
+      },
+      {
+        "path": "verification/net-receipts/evidence.ts",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:bd6f23f8a7b1f3a9038e94010732f5f7ffac5521c620662970a0a250a5a4ebac"
+      },
+      {
+        "path": "verification/net-receipts/oracle.py",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:630922208c8eca2e327c1e128825d334acfdb0b0b60194f085ace244564e8ec2"
+      },
+      {
+        "path": "verification/net-receipts/suite.ts",
+        "encoding": "raw-file-bytes",
+        "digest": "sha256:3a9949a42590f892147845087f870fc2f6bb3a23e43986bb92dbc9cef0fe4d41"
+      }
+    ]
+  },
+  "fixture": {
+    "path": "verification/net-receipts/bru-482.fixture.json",
+    "encoding": "raw-file-bytes",
+    "digest": "sha256:870986e4b16b815ca0812e2d7850c0adcfc41a296232a139d574a658b590c586",
+    "sourceId": "synthetic-billing-net-v1",
+    "inputDigest": "sha256:a73302f0083ff4a4e8cbd8ba65c1d0c0eb556838141b3ffa0bf71f3dec7dfea4"
+  },
+  "expected": {
+    "path": "verification/net-receipts/bru-482.expected.json",
+    "encoding": "raw-file-bytes",
+    "digest": "sha256:290ace13fe8298b698c277d9124e35c80640b4cac340a2e7e9b761319010a5a9",
+    "independence": "Handwritten BRU-482 / BRU-483 arithmetic, independent of the candidate calculator. Do not regenerate from candidate output.",
+    "rationale": [
+      "January: p1 10000 minus old-payment refund r4 3000 minus f1/f2 300+50 = 6650.",
+      "February: p2 20000 (UTC offset) minus partial refunds r1/r2 1000+500 minus f3 600 = 17900.",
+      "March: no captured payment, minus r3 2000 = -2000; failed p3 excluded.",
+      "April and May: declared-complete streams contain no eligible activity.",
+      "June: p4 30000 minus f4 900 = 29100; pending rp excluded.",
+      "Totals: 60000 - 6500 - 1850 = 51650; July and Orbit excluded independently."
+    ]
+  },
+  "oracle": {
+    "path": "verification/net-receipts/oracle.py",
+    "encoding": "raw-file-bytes",
+    "digest": "sha256:630922208c8eca2e327c1e128825d334acfdb0b0b60194f085ace244564e8ec2"
+  },
+  "scope": {
+    "tenantId": "acme",
+    "enforcement": "local-policy-over-caller-supplied-rows",
+    "asOf": "2026-07-01",
+    "startInclusive": "2026-01-01T00:00:00.000Z",
+    "endExclusive": "2026-07-01T00:00:00.000Z",
+    "months": [
+      "2026-01",
+      "2026-02",
+      "2026-03",
+      "2026-04",
+      "2026-05",
+      "2026-06"
+    ],
+    "currency": "USD",
+    "sourceCompleteness": "caller-declared-only",
+    "productionFreshness": "unknown"
+  },
+  "toleranceCents": 0,
+  "cases": [
+    {
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:0a3b6e4f6424115494625a425798adde5bf81cfc2dfc29f3e873d530d16ede1c",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "input-order-reversed",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:4324ad0c1f30befda4408d467c146e7af7277c1cf85ad1430288a689d342205b",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "historical-parent-partial-refunds-and-fanout",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 0,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 0,
+              "netCents": -1500
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            }
+          ],
+          "totals": {
+            "capturedCents": 10000,
+            "settledRefundCents": 4500,
+            "postedFeeCents": 350,
+            "netCents": 5150
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 0,
+              "netCents": -1500,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 10000,
+            "settledRefundCents": 4500,
+            "postedFeeCents": 350,
+            "netCents": 5150
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:9b9fdaf1f746fb088a6945a7d5e55af3dcd845189684f10d25dfe12f3b686568",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "orbit-independently-scoped",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 999999,
+              "settledRefundCents": 12345,
+              "postedFeeCents": 7777,
+              "netCents": 979877
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            }
+          ],
+          "totals": {
+            "capturedCents": 999999,
+            "settledRefundCents": 12345,
+            "postedFeeCents": 7777,
+            "netCents": 979877
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 999999,
+              "settledRefundCents": 12345,
+              "postedFeeCents": 7777,
+              "netCents": 979877,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 999999,
+            "settledRefundCents": 12345,
+            "postedFeeCents": 7777,
+            "netCents": 979877
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "orbit",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:8381bb3e44bc62b6c79c30db208164aec00e6c0a4815eabef47624fdc9eef5a3",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-unknown-parent",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:2b2d686570b16460b0c5005aaf07a3be412b814154e6553045644f40383c4bf2",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-cross-tenant-parent",
+      "expected": { "kind": "rejected", "code": "CROSS_TENANT_PARENT" },
+      "actual": { "kind": "rejected", "code": "CROSS_TENANT_PARENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:047447a1d9c58692a7f0386684f4de9aed81496769c3b624ad3288ea1279ac3b",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-noncaptured-parent",
+      "expected": { "kind": "rejected", "code": "NONCAPTURED_PARENT" },
+      "actual": { "kind": "rejected", "code": "NONCAPTURED_PARENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:d64813dabaf94468fce691a94bed41c606cb05e7fd3ad1e407d790c57ae7877d",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-foreign-adjustment-to-acme-parent-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:a0e69f5231d303a70f1e16e52772ed899827c2d7a7f5d04bad5bfba22084873e",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-foreign-orphan-excluded-before-parent-lookup",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:2e10bb25d4e18618c1534a72ac7c55f8c732819d1e91e8649b7a97ae6feff300",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-failed-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:ca5fec5d9fb3789918f815c652aea6813ef6c6da742774e17c732c432e642750",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-failed-orphan-still-blocks",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:6108989e59d97280121fb3a60cd128f9f9a30fc0e5a40d6d617ec55df7280d01",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-pending-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:144c6c962764ee9780b7d5c99edd51d7b52446ec12aec1195c8ff1362bac9e51",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-pending-orphan-still-blocks",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:2b617f735410e9a1ec53f390fbec4487ba4034946d1b74d5b39b0e32603f4985",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-unknown-parent",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:38851eb2c4bc2512f85e627e3fca544a995a0c65d56b5ea469220eb075ffde03",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-cross-tenant-parent",
+      "expected": { "kind": "rejected", "code": "CROSS_TENANT_PARENT" },
+      "actual": { "kind": "rejected", "code": "CROSS_TENANT_PARENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:4b9a8082a383dd901a1c7f112f4440c17d9e31d41f3ecdbd277733b0238f5dc6",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-noncaptured-parent",
+      "expected": { "kind": "rejected", "code": "NONCAPTURED_PARENT" },
+      "actual": { "kind": "rejected", "code": "NONCAPTURED_PARENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:bb5092922745e3a06d350db9be517586e6fb8a297e8670f29d51e8fdf02d9fac",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-foreign-adjustment-to-acme-parent-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:2444615f630ffe586f7c1d2244e1603bb5c0ab7a30be61a478b922463cc6058a",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-foreign-orphan-excluded-before-parent-lookup",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:58a8908e258861ace9916ea124ba2ebd0f7092f130092a973dd0e0bf6df20eb6",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-failed-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:708766658f2009ffa51029ca6b4b8f044512de696513ef7bff22a0dcfe4130b8",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-failed-orphan-still-blocks",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:d9a673fdca7ac139e473290091093b259d15bfa932e3f5028bb27df82f1dc9e8",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-pending-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:8f9c5d18011a026f38e0a82c74c1742cd70900d89bb7f3fe035499a814a8ae2a",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-pending-orphan-still-blocks",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_PAYMENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:ee23ae9a436a570c0fb70ec9042e5d6c6d6c4234e4548993c6e6a2323b568a72",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "pending-payment-excluded",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:b0917d41dccc16514a060c46a62b54fd5280cc8c054c298fa997d0d55ba8bd77",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "pending-refund-becomes-settled-own-month",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 4000,
+              "postedFeeCents": 900,
+              "netCents": 25100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 10500,
+            "postedFeeCents": 1850,
+            "netCents": 47650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 30000,
+              "settledRefundCents": 4000,
+              "postedFeeCents": 900,
+              "netCents": 25100,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 10500,
+            "postedFeeCents": 1850,
+            "netCents": 47650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:56c15db697c1cac4aa909acbba9121449c3fb9dc3ea12a4f242616f67829a4de",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:9a72df60fec120d4e1511b78ffbe7adef8653cb258f4c6cdb3ddcdea999b189f",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-conflicting-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:f7935d3627696023f71567292fee92dae27659ff8282fd88be0d4c2123d8a796",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-incomplete",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:7d19604bfd4660de1f8ab70b15bcf6f1ea0cf40a551a9f95fd50041d7a383b16",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-unknown-completeness",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:3eaa9bd6da9ad398ec1a6ffcbaeee3a4e2e85b06604c55df91c85911b9d73371",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-missing",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:e8707d0ef690790e19029f6afe4607e2f6628598a6b06af6e5d3535ff96d4795",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:8ba13ece28dfc53e7330b89113d36e3583c3c9f89e3d73a06f29a34bb125234e",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-conflicting-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:e1759a88103bc6bf75ec9f64611121077f9a0f9e7fb1bae5cc063b0bd2a53c05",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-incomplete",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:804f1aae9e961a95e6afa60bbea052fca620fb0abaac90b34ee34171f3eda565",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-unknown-completeness",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:1971d0c4ecf1b28085f7de29161df9300fcf206536acb66488d5b6d4dcaf2b21",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-missing",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:385530390d0ca6305345fae2c067d9e80e4092639a00d8d354983eb8fa311e3f",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:45a723605b7800921057e85ff4bab0c553f109c0d98c24a87ef725199a726bcf",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-conflicting-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:38d46848da82a1e3a968c16216ce83a90b5b0ec18c06377938ffc7e97f132f05",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-incomplete",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:6c3340c99bf1e0193e40a5396b89cf0ae0ba27c32d30546e7d4732af57ccfdb5",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-unknown-completeness",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:b78774bb8b54e2e4bdaa6c1e175c0ddcd73fd4caec2f3dfaaf9a256c9ffc90be",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-missing",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:197fb60dc93e9c27fc4d5a8152121329be56a6cd7a6a0052abcbc023b1949c2e",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:86d50669db64a3d8ed0780bfe8229b8753382f126e233b0f9af8df5c2e27afca",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-conflicting-duplicate-id",
+      "expected": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "actual": { "kind": "rejected", "code": "DUPLICATE_ID" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:73adeea14bef5ac3cacbfcab11ef5b9dfc0f61a61340d72b21d337b19ec8b179",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-incomplete",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:03d5caacadd29fb9898149b5c13f4c024abfff10f6a25f67034a39745e00431f",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-unknown-completeness",
+      "expected": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "actual": { "kind": "rejected", "code": "INCOMPLETE_STREAM" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:e09b935229f824b98379541b56edfc34c03883e174bfad065e58fbb17cd2a887",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-missing",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:47b8f70b61eceade339429f983211efaee3f84086bf4dca0aa56311866fa3ea7",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "unknown-charge",
+      "expected": { "kind": "rejected", "code": "UNKNOWN_CHARGE" },
+      "actual": { "kind": "rejected", "code": "UNKNOWN_CHARGE" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:694fb7d9235be10feee640912280d47f7d2183e4a3f897268e2634dad8dcb468",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "multiple-captures-per-charge",
+      "expected": { "kind": "rejected", "code": "MULTIPLE_CAPTURES" },
+      "actual": { "kind": "rejected", "code": "MULTIPLE_CAPTURES" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:4e4326d6c855ec1e5a98794ba576e2ba7d246b5a1b8c3c8ce71efe26bbf1f7b4",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-reversal-blocks",
+      "expected": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "actual": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:da7626a29f15ccd1726175a223d8d61323c9f05b615564cdb76ce9ed375dab74",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "payments-correction-blocks",
+      "expected": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "actual": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:98c907f9232667c5c4f9da7b88cda1a6198d0eae0bbe1f5e1b180906af96c606",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-reversal-blocks",
+      "expected": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "actual": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:b895ea9498800fdffa9faa1e534bcec2fcdec35dd3a8e657a328cfbe717e9e4a",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-correction-blocks",
+      "expected": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "actual": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:8c64f4511f058937ae100a1c2abfde89e057f7e77389b03fb3aa28c7ee55401d",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-reversal-blocks",
+      "expected": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "actual": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:e1b95f87d0436a51d68665f162ff6dcf879ac1071cbe595f4c06fe40d78925f5",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-correction-blocks",
+      "expected": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "actual": { "kind": "rejected", "code": "UNSUPPORTED_EVENT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:ff6653b1d6938d7e119dac9f610ec1c138ed8512f8cd4a0605abcebd0882db95",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "all-explicitly-empty-complete",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            }
+          ],
+          "totals": {
+            "capturedCents": 0,
+            "settledRefundCents": 0,
+            "postedFeeCents": 0,
+            "netCents": 0
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 0,
+            "settledRefundCents": 0,
+            "postedFeeCents": 0,
+            "netCents": 0
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:d5e8f45b8dbaa643e004d1986dec867bf5dbd3bb84920f291db8238c300aafcf",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-invalid-cents--1",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:fee201cc02722281fa91c7adbdcb2cad17af983dc2c710bc6195d5533bfb4069",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-invalid-cents-0.5",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:1411b971ee052150e4fe2edd89e9d4657b62c61190e4e513fdf865fbcb4a7539",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-invalid-cents-9007199254740992",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:f3c135e29f1630ddb1a71057c599ac6d8ab91e4007840a804d1beaa957019861",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "charges-unsupported-currency",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:13c301badfe3972d1f9ecd656ea6c26d01c711d96c7273a8ef303453d2fd9d52",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-invalid-cents--1",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:0d4c92da1941ee6799289b8997456ef58e574a5094f8bd42bde3293c1e72edb8",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-invalid-cents-0.5",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:6563a707f07454864f2804619bc392035813d475cbd343757e0b242306cfc116",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-invalid-cents-9007199254740992",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:9e6d625d5850615b22a75c53be35e5d98566316de9e74c85d7f3b5b244ee975f",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-unsupported-currency",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:bf8985a5999afec7220ba92e9e8f98ec155f96da2e915d216678e951ba0bacf7",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-invalid-cents--1",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:5510ba0bed79ad5c912a3230c5e39a249990a66c66acc13aba29cc8270d380cc",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-invalid-cents-0.5",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:248b27daf28b6501d3231510c30bad1bdc4d50a4d9658f78fdfd19f8119526c8",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-invalid-cents-9007199254740992",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:9ec4f3eb48ca696cbe3b77c475e542dc419692e7d15eb84b8e3210841bda99e5",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-unsupported-currency",
+      "expected": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "actual": { "kind": "rejected", "code": "INVALID_INPUT" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:75f06c2870f231045ca28f9a9798785f1ebd62ce3d40d2899610a2cb2284cbce",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "monthly-component-overflow",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:3154adf5db201b072f282cc54d715fcaa99f2f815065aefbeb8112b0476e3ecf",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "grand-component-overflow",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:e1c2eb54ee0c83f041d01898c78bafb0ece9cf75dd12a25fc3aa892392c854a9",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "unsafe-component-hidden-by-safe-net",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:162b4bbc27aded7dd39e494478a4c897bdd37c6369d424ae2e7623c23db581fe",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-monthly-overflow-hidden-by-safe-net",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:c1bb28791e82edf028b0e546ff27de2088d56acada793f43787381f42a15d5aa",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "refunds-grand-overflow-hidden-by-safe-net",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:443d8eb07a1b19a45da4011c59446333caaf696495a2dd49252b52a2b63ec443",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-monthly-overflow-hidden-by-safe-net",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:58a45af69e025c39e0c0f6a4deb047bd2405187d94695475589b97a0ee8bf89d",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "fees-grand-overflow-hidden-by-safe-net",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:735bef08bc47167c64c79580e493ee6a8931324d6cbb1aee7f856d6e90bf6ad8",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "signed-monthly-net-overflow",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:750228f7a60bb74c709c8ee0995e0e011a8ee248581ce2db6287d4e87d7a2df0",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "signed-grand-net-overflow",
+      "expected": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "actual": { "kind": "rejected", "code": "UNSAFE_CENTS" },
+      "assertions": { "passed": ["kind", "code"], "failed": [] },
+      "status": "passed"
+    },
+    {
+      "inputDigest": "sha256:ab9d8e672ae6d9b15a9e47c10fd9999e926b04c2247312f260f27e12a47eebf3",
+      "inputEncoding": "generated-case-json-v1; replay pinned suite to reconstruct",
+      "id": "utc-inclusive-start-exclusive-end-all-streams",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 100,
+              "settledRefundCents": 10,
+              "postedFeeCents": 0,
+              "netCents": 90
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 20,
+              "netCents": -20
+            }
+          ],
+          "totals": {
+            "capturedCents": 100,
+            "settledRefundCents": 10,
+            "postedFeeCents": 20,
+            "netCents": 70
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "capturedCents": 100,
+              "settledRefundCents": 10,
+              "postedFeeCents": 0,
+              "netCents": 90,
+              "month": "2026-01"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-02"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-03"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-04"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0,
+              "month": "2026-05"
+            },
+            {
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 20,
+              "netCents": -20,
+              "month": "2026-06"
+            }
+          ],
+          "totals": {
+            "capturedCents": 100,
+            "settledRefundCents": 10,
+            "postedFeeCents": 20,
+            "netCents": 70
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": []
+      },
+      "status": "passed"
+    }
+  ],
+  "mutations": [
+    {
+      "mutation": "refund-in-capture-month",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 350,
+              "netCents": 8150
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 600,
+              "netCents": 17400
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 1000,
+              "postedFeeCents": 900,
+              "netCents": 28100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 4500,
+            "postedFeeCents": 1850,
+            "netCents": 53650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].postedFeeCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].postedFeeCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].postedFeeCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].postedFeeCents",
+          "totals.capturedCents",
+          "totals.postedFeeCents"
+        ],
+        "failed": [
+          {
+            "path": "points[0].settledRefundCents",
+            "expected": 3000,
+            "actual": 1500,
+            "status": "failed"
+          },
+          {
+            "path": "points[0].netCents",
+            "expected": 6650,
+            "actual": 8150,
+            "status": "failed"
+          },
+          {
+            "path": "points[1].settledRefundCents",
+            "expected": 1500,
+            "actual": 2000,
+            "status": "failed"
+          },
+          {
+            "path": "points[1].netCents",
+            "expected": 17900,
+            "actual": 17400,
+            "status": "failed"
+          },
+          {
+            "path": "points[2].settledRefundCents",
+            "expected": 2000,
+            "actual": 0,
+            "status": "failed"
+          },
+          {
+            "path": "points[2].netCents",
+            "expected": -2000,
+            "actual": 0,
+            "status": "failed"
+          },
+          {
+            "path": "points[5].settledRefundCents",
+            "expected": 0,
+            "actual": 1000,
+            "status": "failed"
+          },
+          {
+            "path": "points[5].netCents",
+            "expected": 29100,
+            "actual": 28100,
+            "status": "failed"
+          },
+          {
+            "path": "totals.settledRefundCents",
+            "expected": 6500,
+            "actual": 4500,
+            "status": "failed"
+          },
+          {
+            "path": "totals.netCents",
+            "expected": 51650,
+            "actual": 53650,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    },
+    {
+      "mutation": "raw-join-fanout",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 40000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 36650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 60000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 59100
+            }
+          ],
+          "totals": {
+            "capturedCents": 120000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 111650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents"
+        ],
+        "failed": [
+          {
+            "path": "points[0].capturedCents",
+            "expected": 10000,
+            "actual": 40000,
+            "status": "failed"
+          },
+          {
+            "path": "points[0].netCents",
+            "expected": 6650,
+            "actual": 36650,
+            "status": "failed"
+          },
+          {
+            "path": "points[5].capturedCents",
+            "expected": 30000,
+            "actual": 60000,
+            "status": "failed"
+          },
+          {
+            "path": "points[5].netCents",
+            "expected": 29100,
+            "actual": 59100,
+            "status": "failed"
+          },
+          {
+            "path": "totals.capturedCents",
+            "expected": 60000,
+            "actual": 120000,
+            "status": "failed"
+          },
+          {
+            "path": "totals.netCents",
+            "expected": 51650,
+            "actual": 111650,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    },
+    {
+      "mutation": "local-date-bucketing",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 30000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 26650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 0,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": -2100
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[1].month",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents",
+          "totals.netCents"
+        ],
+        "failed": [
+          {
+            "path": "points[0].capturedCents",
+            "expected": 10000,
+            "actual": 30000,
+            "status": "failed"
+          },
+          {
+            "path": "points[0].netCents",
+            "expected": 6650,
+            "actual": 26650,
+            "status": "failed"
+          },
+          {
+            "path": "points[1].capturedCents",
+            "expected": 20000,
+            "actual": 0,
+            "status": "failed"
+          },
+          {
+            "path": "points[1].netCents",
+            "expected": 17900,
+            "actual": -2100,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    },
+    {
+      "mutation": "include-pending",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 4000,
+              "postedFeeCents": 900,
+              "netCents": 25100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 10500,
+            "postedFeeCents": 1850,
+            "netCents": 47650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].postedFeeCents",
+          "totals.capturedCents",
+          "totals.postedFeeCents"
+        ],
+        "failed": [
+          {
+            "path": "points[5].settledRefundCents",
+            "expected": 0,
+            "actual": 4000,
+            "status": "failed"
+          },
+          {
+            "path": "points[5].netCents",
+            "expected": 29100,
+            "actual": 25100,
+            "status": "failed"
+          },
+          {
+            "path": "totals.settledRefundCents",
+            "expected": 6500,
+            "actual": 10500,
+            "status": "failed"
+          },
+          {
+            "path": "totals.netCents",
+            "expected": 51650,
+            "actual": 47650,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    },
+    {
+      "mutation": "clamp-negative",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 53650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.settledRefundCents",
+          "totals.postedFeeCents"
+        ],
+        "failed": [
+          {
+            "path": "points[2].netCents",
+            "expected": -2000,
+            "actual": 0,
+            "status": "failed"
+          },
+          {
+            "path": "totals.netCents",
+            "expected": 51650,
+            "actual": 53650,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    },
+    {
+      "mutation": "scope-only-payments",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 13845,
+              "postedFeeCents": 8377,
+              "netCents": -2222
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 18845,
+            "postedFeeCents": 9627,
+            "netCents": 31528
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].settledRefundCents",
+          "points[0].postedFeeCents",
+          "points[0].netCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents"
+        ],
+        "failed": [
+          {
+            "path": "points[1].settledRefundCents",
+            "expected": 1500,
+            "actual": 13845,
+            "status": "failed"
+          },
+          {
+            "path": "points[1].postedFeeCents",
+            "expected": 600,
+            "actual": 8377,
+            "status": "failed"
+          },
+          {
+            "path": "points[1].netCents",
+            "expected": 17900,
+            "actual": -2222,
+            "status": "failed"
+          },
+          {
+            "path": "totals.settledRefundCents",
+            "expected": 6500,
+            "actual": 18845,
+            "status": "failed"
+          },
+          {
+            "path": "totals.postedFeeCents",
+            "expected": 1850,
+            "actual": 9627,
+            "status": "failed"
+          },
+          {
+            "path": "totals.netCents",
+            "expected": 51650,
+            "actual": 31528,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    },
+    {
+      "mutation": "drop-old-parent-refund",
+      "inputDigest": "sha256:984ed0f0094f9a5a51a8d9b50c37202e5b3a0768439e5551f0a466e063e42937",
+      "id": "acme-six-month-components-and-total",
+      "expected": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 3000,
+              "postedFeeCents": 350,
+              "netCents": 6650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 6500,
+            "postedFeeCents": 1850,
+            "netCents": 51650
+          }
+        }
+      },
+      "actual": {
+        "kind": "completed",
+        "values": {
+          "points": [
+            {
+              "month": "2026-01",
+              "capturedCents": 10000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 350,
+              "netCents": 9650
+            },
+            {
+              "month": "2026-02",
+              "capturedCents": 20000,
+              "settledRefundCents": 1500,
+              "postedFeeCents": 600,
+              "netCents": 17900
+            },
+            {
+              "month": "2026-03",
+              "capturedCents": 0,
+              "settledRefundCents": 2000,
+              "postedFeeCents": 0,
+              "netCents": -2000
+            },
+            {
+              "month": "2026-04",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-05",
+              "capturedCents": 0,
+              "settledRefundCents": 0,
+              "postedFeeCents": 0,
+              "netCents": 0
+            },
+            {
+              "month": "2026-06",
+              "capturedCents": 30000,
+              "settledRefundCents": 0,
+              "postedFeeCents": 900,
+              "netCents": 29100
+            }
+          ],
+          "totals": {
+            "capturedCents": 60000,
+            "settledRefundCents": 3500,
+            "postedFeeCents": 1850,
+            "netCents": 54650
+          }
+        },
+        "context": {
+          "metricId": "operational-net-receipts",
+          "metricVersion": 1,
+          "asOf": "2026-07-01",
+          "tenantId": "acme",
+          "currency": "USD",
+          "timezone": "UTC",
+          "startInclusive": "2026-01-01T00:00:00.000Z",
+          "endExclusive": "2026-07-01T00:00:00.000Z"
+        }
+      },
+      "assertions": {
+        "passed": [
+          "kind",
+          "context.metricId",
+          "context.metricVersion",
+          "context.asOf",
+          "context.tenantId",
+          "context.currency",
+          "context.timezone",
+          "context.startInclusive",
+          "context.endExclusive",
+          "points.length",
+          "points[0].month",
+          "points[0].capturedCents",
+          "points[0].postedFeeCents",
+          "points[1].month",
+          "points[1].capturedCents",
+          "points[1].settledRefundCents",
+          "points[1].postedFeeCents",
+          "points[1].netCents",
+          "points[2].month",
+          "points[2].capturedCents",
+          "points[2].settledRefundCents",
+          "points[2].postedFeeCents",
+          "points[2].netCents",
+          "points[3].month",
+          "points[3].capturedCents",
+          "points[3].settledRefundCents",
+          "points[3].postedFeeCents",
+          "points[3].netCents",
+          "points[4].month",
+          "points[4].capturedCents",
+          "points[4].settledRefundCents",
+          "points[4].postedFeeCents",
+          "points[4].netCents",
+          "points[5].month",
+          "points[5].capturedCents",
+          "points[5].settledRefundCents",
+          "points[5].postedFeeCents",
+          "points[5].netCents",
+          "totals.capturedCents",
+          "totals.postedFeeCents"
+        ],
+        "failed": [
+          {
+            "path": "points[0].settledRefundCents",
+            "expected": 3000,
+            "actual": 0,
+            "status": "failed"
+          },
+          {
+            "path": "points[0].netCents",
+            "expected": 6650,
+            "actual": 9650,
+            "status": "failed"
+          },
+          {
+            "path": "totals.settledRefundCents",
+            "expected": 6500,
+            "actual": 3500,
+            "status": "failed"
+          },
+          {
+            "path": "totals.netCents",
+            "expected": 51650,
+            "actual": 54650,
+            "status": "failed"
+          }
+        ]
+      },
+      "status": "failed",
+      "detected": true
+    }
+  ],
+  "status": "passed",
+  "statement": "Synthetic fixture checks passed. Production data has not been verified.",
+  "limitations": [
+    "Only the pinned synthetic inputs, handwritten expectations, declared cases and implementation were compared; matching them does not prove all financial cases correct.",
+    "The separately executable Python oracle corroborates the baseline, not production; the Node runner does not execute Python.",
+    "No live connector, PostgreSQL isolation, source completeness, snapshot consistency, freshness, read-only permissions, query cost or timeouts tested.",
+    "No durable authenticated approval, artifact import authority, generic canonical JSON, version registry or payout reconciliation implemented.",
+    "Hashes identify local content relative to a known reference; they do not authenticate its author or grant access.",
+    "Reversals, corrections, split captures, FX, tax subtraction, proration, fee credits and accounting revenue recognition are unsupported."
+  ]
+}

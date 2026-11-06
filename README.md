@@ -8,7 +8,7 @@ Analyticool is a working name. This prototype implements a trusted proposal life
 
 ## Run locally
 
-Requirements: **Node.js 24 LTS** and **pnpm 10.34.9**. The package manager is pinned in `package.json`; `.nvmrc` selects Node 24.
+Requirements: **Node.js 24.21.0 LTS** and **pnpm 10.34.9**. The package manager is pinned in `package.json`; `.nvmrc` pins Node for reproducible fixture evidence.
 
 ```sh
 nvm use                         # if you use nvm
@@ -33,6 +33,7 @@ The ambiguous example, **Show net revenue by customer**, asks what net revenue s
 - A readable definition, explicit assumptions, responsive line chart, and accessible exact-value table.
 - Reusable `<MetricChart result={result} />` and `<MetricKpi result={result} />` components.
 - A published metric preview and local version history using the existing React components.
+- A separate deterministic operational net receipts calculator, signed results, and independently checked synthetic fixture evidence. See [its contract and replay guide](docs/architecture/operational-net-receipts.md). This new core calculation is not integrated into the demo proposal lifecycle or React components.
 
 The six fixture values are **$2,000, $2,250, $2,490, $2,750, $3,100, and $3,420**. They represent collected revenue in USD, not MRR or accounting revenue recognition. Paid invoices are grouped by payment timestamp in UTC. Open, void, and refunded invoices are excluded entirely, as is the current partial month. Integer cents avoid floating-point accumulation. Missing months become zero; duplicate invoice IDs and unsafe monthly totals are rejected. Annual invoices are not prorated and currencies are not converted.
 
@@ -44,7 +45,7 @@ The six fixture values are **$2,000, $2,250, $2,490, $2,750, $3,100, and $3,420*
 | `packages/react` | Stateless KPI and SVG chart with an exact-value table. Accepts results; never fetches. No Tailwind requirement.                     |
 | `apps/demo`      | Synthetic fixtures, fixed workspace selection, local proposal review/publication, and calculated preview.                           |
 
-Definition, execution, and presentation stay separate. The calculation takes explicit inputs and never reads the clock. The app supplies results to React; there is no metric-name resolver or hidden execution provider. There is one supported calculation, without a generic connector or plugin framework.
+Definition, execution, and presentation stay separate. Calculations take explicit inputs and never read the clock. The app supplies collected-revenue results to React; there is no metric-name resolver or hidden execution provider. Core also supports bounded operational net receipts with its own result contract, without a generic connector or plugin framework.
 
 ### Proposal trust and lifecycle
 
@@ -110,7 +111,7 @@ The two questions are predefined. **No LLM is called**, no schema discovery occu
 
 Fixtures contain two fictional workspaces. The demo selects one fixed workspace in application code, never from client input, before passing rows to core. This is fixture selection, **not tenant authorization**. Core assumes callers already authorized their records. Real database connections require a server-enforced security design.
 
-Published definitions and their proposal/review snapshots have immutable local version history, but no global registry, durable storage, or audit log. Approval is process-local state and resets on reload; it is not an authorization boundary. Presentation components do not enforce approval. Natural-language generation, net-revenue/customer calculations, PostgreSQL and other connectors, CSV/Excel import, RAG, MCP, authentication, billing, and hosted infrastructure remain future work.
+Published definitions and their proposal/review snapshots have immutable local version history, but no global registry, durable storage, or audit log. Approval is process-local state and resets on reload; it is not an authorization boundary. Presentation components do not enforce approval. Natural-language generation, net revenue by customer, PostgreSQL and other connectors, CSV/Excel import, RAG, MCP, authentication, billing, and hosted infrastructure remain future work. The separate net receipts fixture checks local arithmetic and scope policy; production data, source completeness/freshness and real tenant isolation have not been verified.
 
 ## Quality checks
 
@@ -119,11 +120,13 @@ pnpm lint
 pnpm format:check
 pnpm typecheck
 pnpm test
+pnpm verify:net-receipts        # replay and check the committed synthetic evidence
+python3 verification/net-receipts/oracle.py  # independent baseline arithmetic
 pnpm build
 pnpm start                     # serve the production build
 ```
 
-GitHub Actions runs a frozen install and all five checks. Tests cover proposal schemas, references, clarification, explicit transitions, forged/stale states, rejection, immutability/versioning, executor compatibility, UTC boundaries and offsets, leap day, year rollover, integer arithmetic, exclusion rules, empty months, duplicates, overflow, fixture selection, and server-rendered components.
+GitHub Actions runs a frozen install, all five checks, net receipts evidence replay and the independent Python oracle. Tests cover proposal schemas, references, clarification, explicit transitions, forged/stale states, rejection, immutability/versioning, executor compatibility, UTC boundaries and offsets, leap day, year rollover, integer arithmetic, exclusion rules, empty months, duplicates, overflow, fixture selection, and server-rendered components. Net receipts adds independent component/total assertions, explicit blocked cases and deliberately incorrect variants that must fail. **Synthetic fixture checks passed. Production data has not been verified.**
 
 For the optional browser smoke test, run `pnpm exec playwright install chromium`, then `pnpm build && pnpm test:smoke`. It starts and stops a local production server on port 3100 and checks generation, clarification, keyboard approval, publication, version history, rejection, reset/reload, and mobile overflow. This browser check is separate from the lightweight CI baseline.
 
