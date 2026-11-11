@@ -12,21 +12,21 @@
   font-family: system-ui, sans-serif;
   color: #1f2937;
 }
-.embed-themes__intro h1 {
+.embed-themes .embed-themes__intro h1 {
   margin: 0 0 8px;
   font-size: 1.75rem;
 }
-.embed-themes__intro p {
+.embed-themes .embed-themes__intro p {
   margin: 0 0 24px;
   color: #4b5563;
 }
-.embed-themes__grid {
+.embed-themes .embed-themes__grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   gap: 24px;
 }
 @media (min-width: 960px) {
-  .embed-themes__grid {
+  .embed-themes .embed-themes__grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
