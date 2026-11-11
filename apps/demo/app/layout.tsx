@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import "./globals.css";
+
+// Global product CSS (Tailwind preflight, :root font/colour/focus) is imported
+// by the demo page itself, not here, so /embed-themes renders like a customer
+// host page with none of Analyticool's styles.
 
 export const metadata: Metadata = {
   title: "Analyticool — Metric to React",

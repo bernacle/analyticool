@@ -1,3 +1,4 @@
+import "./globals.css";
 import { MetricDemo } from "./metric-demo";
 
 export default function Home() {
