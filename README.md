@@ -31,7 +31,7 @@ The ambiguous example, **Show net revenue by customer**, asks what net revenue s
 - A strict, typed `MetricProposal`, two deterministic fixture scenarios, required clarification, explicit review/approval/rejection, and immutable local publication/versioning.
 - A pure calculation over synthetic SaaS payments, fixed as of **2026-07-01**, covering January–June 2026.
 - A readable definition, explicit assumptions, responsive line chart, and accessible exact-value table.
-- Reusable `<MetricChart result={result} />` and `<MetricKpi result={result} />` components.
+- Reusable `<MetricChart result={result} />` and `<MetricKpi result={result} />` components that ship no CSS: they inherit the host font and colour and are themed with documented `--ac-*` CSS variables, `className`/`style` and `data-ac-part` hooks. `/embed-themes` renders the same synthetic result in the Analyticool default appearance and a fictional customer theme. See [embed theming](docs/design/embed-theming/README.md).
 - A published metric preview and local version history using the existing React components.
 - A separate deterministic operational net receipts calculator, signed results, and independently checked synthetic fixture evidence. See [its contract and replay guide](docs/architecture/operational-net-receipts.md). This new core calculation is not integrated into the demo proposal lifecycle or React components.
 
@@ -103,7 +103,7 @@ function RevenueDashboard({ result }: { result: MonthlyRevenueResult }) {
 // <RevenueDashboard result={result} />
 ```
 
-Both components validate results at runtime, support `className`, and work with React 19. Formatting uses an explicit locale and UTC. The chart has an SVG and an expandable exact-value table.
+Both components validate results at runtime, accept `className` and `style`, read `--ac-*` CSS variables, and work with React 19. Formatting uses an explicit locale and UTC. The chart has an SVG and an expandable exact-value table.
 
 ## Current boundaries
 
@@ -128,7 +128,7 @@ pnpm start                     # serve the production build
 
 GitHub Actions runs a frozen install, all five checks, net receipts evidence replay and the independent Python oracle. Tests cover proposal schemas, references, clarification, explicit transitions, forged/stale states, rejection, immutability/versioning, executor compatibility, UTC boundaries and offsets, leap day, year rollover, integer arithmetic, exclusion rules, empty months, duplicates, overflow, fixture selection, and server-rendered components. Net receipts adds independent component/total assertions, explicit blocked cases and deliberately incorrect variants that must fail. **Synthetic fixture checks passed. Production data has not been verified.**
 
-For the optional browser smoke test, run `pnpm exec playwright install chromium`, then `pnpm build && pnpm test:smoke`. It starts and stops a local production server on port 3100 and checks generation, clarification, keyboard approval, publication, version history, rejection, reset/reload, and mobile overflow. This browser check is separate from the lightweight CI baseline.
+For the optional browser smoke test, run `pnpm exec playwright install chromium`, then `pnpm build && pnpm test:smoke`. It starts and stops a local production server on port 3100 and checks generation, clarification, keyboard approval, publication, version history, rejection, reset/reload, and mobile overflow. `tests/smoke/embed-themes.spec.ts` checks `/embed-themes`: theme variables, font inheritance, no CSS leakage, focus, contrast, tooltips, reduced motion, 390px overflow and hydration. It also writes the screenshots in `docs/design/embed-theming/screenshots/`. This browser check is separate from the lightweight CI baseline.
 
 TypeScript 5.9 and ESLint 9 are retained for compatibility with the current TypeScript-ESLint and Next.js lint-plugin peer ranges. The lockfile pins the complete dependency graph.
 

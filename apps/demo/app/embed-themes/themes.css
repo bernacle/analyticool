@@ -1,0 +1,141 @@
+/*
+ * Host-page CSS for the /embed-themes example. Every selector is scoped under
+ * .embed-themes so nothing here can reach other routes, and no rule targets
+ * :root, html, body or *. @analyticool/react itself ships no CSS at all.
+ */
+
+/* ---- Host page chrome (owned by the "customer", not by Analyticool) ---- */
+.embed-themes {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+  font-family: system-ui, sans-serif;
+  color: #1f2937;
+}
+.embed-themes .embed-themes__intro h1 {
+  margin: 0 0 8px;
+  font-size: 1.75rem;
+}
+.embed-themes .embed-themes__intro p {
+  margin: 0 0 24px;
+  color: #4b5563;
+}
+.embed-themes .embed-themes__grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 24px;
+}
+@media (min-width: 960px) {
+  .embed-themes .embed-themes__grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.embed-themes section {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  min-width: 0;
+  padding: 20px;
+}
+.embed-themes .host-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+}
+.embed-themes .host-bar h2 {
+  margin: 0 0 4px;
+  font-size: 1.125rem;
+}
+.embed-themes .host-bar p {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+.embed-themes .host-bar button {
+  min-height: 44px;
+  padding: 0 18px;
+  font: inherit;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+/* ---- (a) Analyticool default appearance: Darkroom B+ tokens (SPEC §1/§2) ---- */
+.embed-themes .theme-analyticool {
+  --ac-font:
+    Geist, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --ac-ink: #efebe4;
+  --ac-muted: #8f897e;
+  --ac-line: rgba(255, 240, 220, 0.1);
+  --ac-grid: rgba(255, 240, 220, 0.065);
+  --ac-series: #aca4f6;
+  --ac-surface: #161412;
+  --ac-radius: 16px;
+  --ac-figure-size: 2.5rem;
+  background: #0b0a09;
+  color: #efebe4;
+  font-family: var(--ac-font);
+  border-radius: 16px;
+}
+.embed-themes .theme-analyticool .host-bar p {
+  color: #ada79c;
+}
+.embed-themes .theme-analyticool .host-bar button {
+  border: 0;
+  border-radius: 999px;
+  background: #efebe4;
+  color: #0b0a09;
+}
+.embed-themes .theme-analyticool .host-card {
+  padding: 24px;
+}
+.embed-themes .theme-analyticool [data-ac-part="summary"] {
+  color: #ada79c;
+}
+.embed-themes .theme-analyticool :focus-visible {
+  outline: 2px solid #aca4f6;
+  outline-offset: 2px;
+}
+
+/* ---- (b) Fictional customer SaaS: light, serif, bordered, square-ish ---- */
+.embed-themes .theme-customer {
+  /* No --ac-font: the embeds inherit the host font below. */
+  --ac-ink: #111827;
+  --ac-muted: #4b5563;
+  --ac-line: #e5e7eb;
+  --ac-grid: #e5e7eb;
+  --ac-series: #c2410c;
+  --ac-surface: #ffffff;
+  --ac-radius: 4px;
+  --ac-figure-size: 2rem;
+  background: #f3f4f6;
+  color: #111827;
+  font-family: Charter, "Iowan Old Style", Georgia, "Times New Roman", serif;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+}
+.embed-themes .theme-customer .host-bar p {
+  color: #4b5563;
+}
+.embed-themes .theme-customer .host-bar button {
+  border: 1px solid #c2410c;
+  border-radius: 4px;
+  background: #ffffff;
+  color: #9a3412;
+}
+.embed-themes .theme-customer .host-card {
+  padding: 20px;
+  border: 1px solid #d1d5db;
+}
+/* Part hooks style anything the components do not set inline. */
+.embed-themes .theme-customer [data-ac-part="summary"] {
+  color: #9a3412;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.embed-themes .theme-customer :focus-visible {
+  outline: 2px solid #c2410c;
+  outline-offset: 2px;
+}

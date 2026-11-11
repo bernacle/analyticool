@@ -1,13 +1,62 @@
+import type { CSSProperties } from "react";
 import {
   monthlyRevenueResultSchema,
   type MonthlyRevenueResult,
 } from "@analyticool/core";
 
+/**
+ * The documented, deliberately small set of CSS custom properties the
+ * components read. Set them on any ancestor (or through `style`); every one has
+ * a neutral fallback derived from the host's inherited font and colour.
+ * See docs/design/embed-theming/README.md.
+ */
+export type MetricThemeVariable =
+  | "--ac-font"
+  | "--ac-ink"
+  | "--ac-muted"
+  | "--ac-line"
+  | "--ac-grid"
+  | "--ac-series"
+  | "--ac-surface"
+  | "--ac-radius"
+  | "--ac-figure-size";
+
+/** Typed helper for setting theme variables inline, e.g. `style={{ "--ac-series": "teal" }}`. */
+export type MetricThemeVariables = Partial<Record<MetricThemeVariable, string>>;
+
 export interface MetricChartProps {
   /** Validated data supplied by your application; this component never fetches. */
   result: MonthlyRevenueResult;
+  /** Added to the stable root class (`ac-metric-chart` / `ac-metric-kpi`). */
   className?: string;
+  /** Merged last onto the root, so it overrides the component's inline defaults. */
+  style?: CSSProperties & MetricThemeVariables;
 }
+
+// Neutral fallbacks: inherit the host's font and colour; derive tints from it.
+const v = {
+  font: "var(--ac-font, inherit)",
+  ink: "var(--ac-ink, inherit)",
+  muted: "var(--ac-muted, color-mix(in srgb, currentColor 72%, transparent))",
+  line: "var(--ac-line, color-mix(in srgb, currentColor 20%, transparent))",
+  grid: "var(--ac-grid, color-mix(in srgb, currentColor 12%, transparent))",
+  series: "var(--ac-series, currentColor)",
+  surface: "var(--ac-surface, transparent)",
+  radius: "var(--ac-radius, 0)",
+  figureSize: "var(--ac-figure-size, 2.25em)",
+} as const;
+
+const rootStyle = (style: CSSProperties | undefined): CSSProperties => ({
+  margin: 0,
+  fontFamily: v.font,
+  color: v.ink,
+  background: v.surface,
+  borderRadius: v.radius,
+  ...style,
+});
+
+const rootClass = (base: string, className: string) =>
+  className ? `${base} ${className}` : base;
 
 const wholeDollars = new Intl.NumberFormat("en-US", {
   style: "currency",
@@ -27,85 +76,208 @@ const monthName = (month: string) =>
     timeZone: "UTC",
   }).format(new Date(`${month}-01T00:00:00Z`));
 
+const shortMonth = (month: string) =>
+  new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(
+    new Date(`${month}-01T00:00:00Z`),
+  );
+
+// Value ticks use whole dollars (rounded) once the scale reaches $100, where
+// rounding moves a label by at most 0.5% of the axis. Below that, whole dollars
+// would repeat or misstate ticks (a 99-cent scale reads "$0", "$0", "$0"), so
+// ticks keep their cents. `halfCents` is the tick's exact value, so each label
+// is rounded (half up) exactly once, at the precision it displays.
+const tickLabel = (halfCents: bigint, max: number) =>
+  max < 10_000
+    ? money(Number((halfCents + 1n) / 2n))
+    : wholeDollars.format((halfCents + 100n) / 200n);
+
+// Readable floor from Darkroom SPEC §2: nothing that is read is under 12px.
+const axisFontSize = "max(12px, 0.75em)";
+
 /** A dependency-light SVG line chart with an accessible, exact-value table. */
 export function MetricChart({
   result: input,
   className = "",
+  style,
 }: MetricChartProps) {
   const result = monthlyRevenueResultSchema.parse(input);
-  const max = Math.max(1, ...result.points.map((point) => point.valueCents));
+  // At least 2 cents, so the middle tick is a whole cent distinct from zero.
+  const max = Math.max(2, ...result.points.map((point) => point.valueCents));
+  const count = result.points.length;
+  // Percent coordinates: x is the centre of each month's column, y runs from
+  // the maximum (0%) to zero (100%). HTML labels use the same percentages.
   const coordinates = result.points.map((point, index) => ({
-    x: 90 + index * 112,
-    y: 180 - (point.valueCents / max) * 150,
+    x: ((index + 0.5) / count) * 100,
+    y: (1 - point.valueCents / max) * 100,
     ...point,
+  }));
+  // Ticks at the maximum, half of it and zero, counted in halves of the maximum.
+  const ticks = [2, 1, 0].map((halves) => ({
+    fraction: halves / 2,
+    label: tickLabel(BigInt(max) * BigInt(halves), max),
   }));
 
   return (
-    <figure className={className} style={{ margin: 0, color: "#334155" }}>
-      <figcaption style={{ fontWeight: 600, marginBottom: 12 }}>
+    <figure
+      className={rootClass("ac-metric-chart", className)}
+      style={rootStyle(style)}
+    >
+      <figcaption
+        data-ac-part="caption"
+        style={{ fontWeight: 600, marginBottom: 16 }}
+      >
         Monthly collected revenue · USD
       </figcaption>
-      <svg
-        viewBox="0 0 700 225"
+      {/*
+        Axis labels are HTML, not SVG text, so they never scale with the chart:
+        they stay at max(12px, 0.75em) at any width. Only the line layer
+        stretches; its strokes and the points keep their pixel size.
+      */}
+      <div
+        data-ac-part="plot"
         role="img"
         aria-label="Monthly collected revenue in USD. Exact values are in the table below."
-        style={{ width: "100%", height: "auto", display: "block" }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto minmax(0, 1fr)",
+          columnGap: 8,
+          fontSize: axisFontSize,
+          lineHeight: 1.3,
+        }}
       >
-        {[0, 0.5, 1].map((fraction) => (
-          <g key={fraction}>
-            <line
-              x1="90"
-              y1={180 - fraction * 150}
-              x2="650"
-              y2={180 - fraction * 150}
-              stroke="#e2e8f0"
+        <div aria-hidden="true" style={{ position: "relative" }}>
+          {/* In-flow sizer: absolutely positioned ticks do not size the column. */}
+          <span style={{ visibility: "hidden", whiteSpace: "nowrap" }}>
+            {ticks[0]?.label}
+          </span>
+          {ticks.map(({ fraction, label }) => (
+            <span
+              key={fraction}
+              data-ac-part="axis"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: `${(1 - fraction) * 100}%`,
+                transform: "translateY(-50%)",
+                whiteSpace: "nowrap",
+                fontVariantNumeric: "tabular-nums",
+                color: v.muted,
+              }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+        <div style={{ position: "relative", height: 180 }}>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              overflow: "visible",
+            }}
+          >
+            {ticks.map(({ fraction }) => (
+              <line
+                key={fraction}
+                data-ac-part="grid"
+                x1="0"
+                y1={(1 - fraction) * 100}
+                x2="100"
+                y2={(1 - fraction) * 100}
+                vectorEffect="non-scaling-stroke"
+                strokeWidth="1"
+                style={{ stroke: v.grid }}
+              />
+            ))}
+            <polyline
+              data-ac-part="series"
+              points={coordinates.map(({ x, y }) => `${x},${y}`).join(" ")}
+              fill="none"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              style={{ stroke: v.series }}
             />
-            <text
-              x="78"
-              y={184 - fraction * 150}
-              textAnchor="end"
-              fill="currentColor"
-              fontSize="11"
+          </svg>
+          {coordinates.map(({ x, y, month, valueCents }) => (
+            // One fixed 10px SVG per point, so points stay round at any size.
+            <svg
+              key={month}
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              style={{
+                position: "absolute",
+                left: `${x}%`,
+                top: `${y}%`,
+                margin: "-5px 0 0 -5px",
+                overflow: "visible",
+              }}
             >
-              {money(Math.round(max * fraction))}
-            </text>
-          </g>
-        ))}
-        <polyline
-          points={coordinates.map(({ x, y }) => `${x},${y}`).join(" ")}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-        />
-        {coordinates.map(({ x, y, month }) => (
-          <g key={month}>
-            <circle cx={x} cy={y} r="4" fill="currentColor" />
-            <text
-              x={x}
-              y="210"
-              textAnchor="middle"
-              fill="currentColor"
-              fontSize="11"
+              <circle
+                data-ac-part="point"
+                cx="5"
+                cy="5"
+                r="4"
+                style={{ fill: v.series }}
+              >
+                <title>{`${monthName(month)}: ${money(valueCents)}`}</title>
+              </circle>
+            </svg>
+          ))}
+        </div>
+        <div
+          aria-hidden="true"
+          style={{
+            gridColumn: 2,
+            display: "grid",
+            gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`,
+            marginTop: 8,
+            textAlign: "center",
+          }}
+        >
+          {coordinates.map(({ month }, index) => (
+            <span
+              key={month}
+              data-ac-part="axis"
+              style={{ color: v.muted, whiteSpace: "nowrap" }}
             >
-              {monthName(month)}
-            </text>
-          </g>
-        ))}
-      </svg>
-      <details style={{ marginTop: 12 }}>
-        <summary style={{ cursor: "pointer", fontSize: 14 }}>
+              {shortMonth(month)}
+              {/* The year only where it changes, so labels fit at 390px. */}
+              {index === 0 || month.endsWith("-01") ? (
+                <>
+                  <br />
+                  {month.slice(0, 4)}
+                </>
+              ) : null}
+            </span>
+          ))}
+        </div>
+      </div>
+      <details data-ac-part="details" style={{ marginTop: 12 }}>
+        <summary
+          data-ac-part="summary"
+          style={{ cursor: "pointer", fontSize: "0.875em" }}
+        >
           View exact values
         </summary>
         <table
+          data-ac-part="table"
           style={{
             width: "100%",
             borderCollapse: "collapse",
             marginTop: 12,
-            fontSize: 14,
+            fontSize: "0.875em",
           }}
         >
-          <caption style={{ textAlign: "left", marginBottom: 8 }}>
+          <caption
+            style={{ textAlign: "left", marginBottom: 8, color: v.muted }}
+          >
             Six complete months · UTC · as of {result.asOf}
           </caption>
           <thead>
@@ -120,7 +292,10 @@ export function MetricChart({
           </thead>
           <tbody>
             {result.points.map((point) => (
-              <tr key={point.month} style={{ borderTop: "1px solid #e2e8f0" }}>
+              <tr
+                key={point.month}
+                style={{ borderTop: `1px solid ${v.line}` }}
+              >
                 <th
                   scope="row"
                   style={{
@@ -149,22 +324,30 @@ export function MetricChart({
 }
 
 /** Latest complete month, not a six-month total or a recurring revenue measure. */
-export function MetricKpi({ result: input, className = "" }: MetricChartProps) {
+export function MetricKpi({
+  result: input,
+  className = "",
+  style,
+}: MetricChartProps) {
   const result = monthlyRevenueResultSchema.parse(input);
   const latest = result.points[result.points.length - 1];
   if (!latest) throw new Error("Monthly revenue must contain six points.");
   return (
-    <dl className={className} style={{ margin: 0 }}>
-      <dt style={{ fontSize: 14, color: "#475569" }}>
+    <dl
+      className={rootClass("ac-metric-kpi", className)}
+      style={rootStyle(style)}
+    >
+      <dt data-ac-part="label" style={{ fontSize: "0.875em", color: v.muted }}>
         {monthName(latest.month)} collected revenue
       </dt>
       <dd
+        data-ac-part="value"
         style={{
           margin: "8px 0 0",
-          fontSize: 36,
+          fontSize: v.figureSize,
           fontWeight: 600,
           letterSpacing: "-0.04em",
-          color: "#0f172a",
+          lineHeight: 1.1,
           fontVariantNumeric: "tabular-nums",
         }}
       >

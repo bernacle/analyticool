@@ -127,17 +127,17 @@ Not animated, deliberately: page-to-page stage transitions, chart line drawing, 
 - Reduced motion removes all travel and scale; fades stay at 150ms or less; status spinners slow down rather than stop.
 - Status is never colour alone; charts carry an `aria-label` with the range and latest value.
 
-## 8. Embed theming (Proposed)
+## 8. Embed theming
 
-The React Embed SDK must render with the **customer's** design, not ours. The Analyticool look is a default theme, never a requirement:
+The React Embed SDK must render with the **customer's** design, not ours. The Analyticool look is a default theme, never a requirement. Implemented in `@analyticool/react` by BRU-485; see the full contract, copyable CSS and evidence in [`../embed-theming/README.md`](../embed-theming/README.md):
 
-- **Inherit first.** Components use `font: inherit` and `currentColor`, so an unstyled embed already matches the host app.
-- **Every visual decision is a CSS custom property** on the component root, for example `--ac-font`, `--ac-ink`, `--ac-muted`, `--ac-surface`, `--ac-line`, `--ac-series`, `--ac-grid`, `--ac-radius`. The prototype preview uses the same idea (`--h-*` per host).
-- **`className` passthrough** on every component, and stable, documented part selectors (for example `[data-ac-part="value"]`), so plain CSS, CSS Modules or Tailwind can restyle anything.
-- **An opt-out:** a `theme="none"` (unstyled) mode for full control, alongside the default Analyticool theme.
-- **Charts read their colours from those variables** when they draw, so a host theme switch (light/dark) recolours the series. The prototype redraws on the Light/Dark preview switch for this reason.
+- **Inherit first.** Components set `font-family: var(--ac-font, inherit)` and `color: var(--ac-ink, inherit)`, and derive tints from `currentColor`, so an unthemed embed already matches the host app. The package ships no CSS, fonts, grain or background.
+- **Every colour, font and surface is a CSS custom property** with a neutral fallback: `--ac-font`, `--ac-ink`, `--ac-muted`, `--ac-line`, `--ac-grid`, `--ac-series`, `--ac-surface`, `--ac-radius` and `--ac-figure-size`. The prototype preview uses the same idea (`--h-*` per host). Focus rings are host CSS (`:focus-visible`), not a variable.
+- **`className` and `style` passthrough** onto the stable root classes `ac-metric-chart` / `ac-metric-kpi`, plus documented part selectors (`[data-ac-part="caption|plot|grid|axis|series|point|details|summary|table|label|value"]`).
+- **Charts read their colours from those variables**, so a host theme switch (light/dark) recolours the series without JS.
+- The Darkroom B+ default appearance is copyable CSS in the docs and the `/embed-themes` example, not a package stylesheet.
 
-Today, `@analyticool/react`'s `MetricChart` and `MetricKpi` accept `className` and inline a neutral style. The variable contract above does not exist yet.
+**Proposed:** a `theme` prop or `theme="none"` unstyled mode. It was not added because the BRU-485 evidence did not require it; see the README. Also proposed: a shipped default-theme file and the hosted `<Metric>` API.
 
 ## 9. Prototype vs production
 
@@ -151,7 +151,7 @@ Today, `@analyticool/react`'s `MetricChart` and `MetricKpi` accept `className` a
 | Distribution                    | `npm i @analyticool/react`                                | Private workspace packages, not published                                               |
 | Views                           | Chart, KPI                                                | Chart (with an exact-value table), KPI                                                  |
 | Clarify, checks, reconciliation | Generated per metric                                      | Not implemented (no LLM, no schema discovery)                                           |
-| Theming                         | Customer CSS variables, `theme="none"` (§8)               | `className` only                                                                        |
+| Theming                         | Customer CSS variables, `theme="none"` (§8)               | `--ac-*` variables, `className`/`style`, `data-ac-part` hooks; no `theme` prop (§8)     |
 
 The Embed screen labels the proposed path and offers **Available today** with the real code. Keep both until the SDK ships. Hosted authentication and permissions must be designed before the `<Metric>` API is built.
 
