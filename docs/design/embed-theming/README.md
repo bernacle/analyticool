@@ -105,7 +105,7 @@ The example page's full host CSS is in [`themes.css`](../../../apps/demo/app/emb
 - **Responsive axes, never scaled.** The axis labels used to be SVG `<text>` in a 700-unit `viewBox`. They scaled with the chart, to roughly 4px at 390px. They are now HTML (`[data-ac-part="axis"]` spans) at `max(12px, 0.75em)`, positioned with the same percentages as the data, so they meet SPEC §2's 12px floor at any width.
   - **Line layer:** only this stretches (`preserveAspectRatio="none"`), and `vector-effect: non-scaling-stroke` keeps the line at 2.5px and the grid at 1px.
   - **Points:** each is a fixed 10px SVG, so it stays round.
-  - **Tick density:** month ticks are short ("Jan"), with the year only on the first tick and where the year changes. There are three value ticks in whole dollars; exact cents are in the table.
+  - **Tick density:** month ticks are short ("Jan"), with the year only on the first tick and where the year changes. There are three value ticks: rounded whole dollars once the scale reaches $100, and cents below that, so sub-dollar and low-dollar series never repeat or misstate a tick (a 99-cent scale reads "$0.99", "$0.50", "$0.00"). Exact cents are in the table.
   - **Fixed height:** the plot area is 180px tall.
   - **Limit (estimated, not measured):** in a plot narrower than roughly 150px, six month labels at 12px would start to touch. Thinning ticks for that width is left to BRU-465.
 - **Inline specificity.** See rule 3. Variables and root `style` cover every colour, font and surface. Part-level typography needs `!important` today.

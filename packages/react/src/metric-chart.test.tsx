@@ -146,6 +146,39 @@ describe("metric presentation", () => {
     expect(html).toContain(">Jun</span>");
   });
 
+  it.each([
+    [99, ["$0.99", "$0.50", "$0.00"]],
+    [199, ["$1.99", "$1.00", "$0.00"]],
+    [0, ["$0.02", "$0.01", "$0.00"]],
+    [12_345, ["$123", "$62", "$0"]],
+  ])(
+    "labels value ticks meaningfully for a %i-cent maximum",
+    (amountCents, expected) => {
+      const result = calculateMonthlyRevenue(monthlyRevenueDefinition, {
+        asOf: "2026-07-01",
+        invoices: amountCents
+          ? [
+              {
+                id: "only",
+                amountCents,
+                currency: "USD",
+                status: "paid",
+                paidAt: "2026-06-01T00:00:00Z",
+              },
+            ]
+          : [],
+      });
+      const html = renderToStaticMarkup(<MetricChart result={result} />);
+      const ticks = [
+        ...html.matchAll(/<span data-ac-part="axis"[^>]*>([^<]*)<\/span>/g),
+      ]
+        .map(([, label]) => label)
+        .slice(0, 3);
+      expect(ticks).toEqual(expected);
+      expect(new Set(ticks).size).toBe(3);
+    },
+  );
+
   it("gives each point a native tooltip with the exact value", () => {
     const html = renderToStaticMarkup(<MetricChart result={empty} />);
     expect(html.match(/<title>/g)).toHaveLength(6);
