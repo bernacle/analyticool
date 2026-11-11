@@ -76,6 +76,14 @@ const monthName = (month: string) =>
     timeZone: "UTC",
   }).format(new Date(`${month}-01T00:00:00Z`));
 
+const shortMonth = (month: string) =>
+  new Intl.DateTimeFormat("en-US", { month: "short", timeZone: "UTC" }).format(
+    new Date(`${month}-01T00:00:00Z`),
+  );
+
+// Readable floor from Darkroom SPEC §2: nothing that is read is under 12px.
+const axisFontSize = "max(12px, 0.75em)";
+
 /** A dependency-light SVG line chart with an accessible, exact-value table. */
 export function MetricChart({
   result: input,
@@ -84,10 +92,17 @@ export function MetricChart({
 }: MetricChartProps) {
   const result = monthlyRevenueResultSchema.parse(input);
   const max = Math.max(1, ...result.points.map((point) => point.valueCents));
+  const count = result.points.length;
+  // Percent coordinates: x is the centre of each month's column, y runs from
+  // the maximum (0%) to zero (100%). HTML labels use the same percentages.
   const coordinates = result.points.map((point, index) => ({
-    x: 90 + index * 112,
-    y: 180 - (point.valueCents / max) * 150,
+    x: ((index + 0.5) / count) * 100,
+    y: (1 - point.valueCents / max) * 100,
     ...point,
+  }));
+  const ticks = [1, 0.5, 0].map((fraction) => ({
+    fraction,
+    label: wholeDollars.format(BigInt(Math.round(max * fraction)) / 100n),
   }));
 
   return (
@@ -97,71 +112,141 @@ export function MetricChart({
     >
       <figcaption
         data-ac-part="caption"
-        style={{ fontWeight: 600, marginBottom: 12 }}
+        style={{ fontWeight: 600, marginBottom: 16 }}
       >
         Monthly collected revenue · USD
       </figcaption>
-      <svg
+      {/*
+        Axis labels are HTML, not SVG text, so they never scale with the chart:
+        they stay at max(12px, 0.75em) at any width. Only the line layer
+        stretches; its strokes and the points keep their pixel size.
+      */}
+      <div
         data-ac-part="plot"
-        viewBox="0 0 700 225"
         role="img"
         aria-label="Monthly collected revenue in USD. Exact values are in the table below."
-        style={{ width: "100%", height: "auto", display: "block" }}
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto minmax(0, 1fr)",
+          columnGap: 8,
+          fontSize: axisFontSize,
+          lineHeight: 1.3,
+        }}
       >
-        {[0, 0.5, 1].map((fraction) => (
-          <g key={fraction}>
-            <line
-              data-ac-part="grid"
-              x1="90"
-              y1={180 - fraction * 150}
-              x2="650"
-              y2={180 - fraction * 150}
-              style={{ stroke: v.grid }}
+        <div aria-hidden="true" style={{ position: "relative" }}>
+          {/* In-flow sizer: absolutely positioned ticks do not size the column. */}
+          <span style={{ visibility: "hidden", whiteSpace: "nowrap" }}>
+            {ticks[0]?.label}
+          </span>
+          {ticks.map(({ fraction, label }) => (
+            <span
+              key={fraction}
+              data-ac-part="axis"
+              style={{
+                position: "absolute",
+                right: 0,
+                top: `${(1 - fraction) * 100}%`,
+                transform: "translateY(-50%)",
+                whiteSpace: "nowrap",
+                fontVariantNumeric: "tabular-nums",
+                color: v.muted,
+              }}
+            >
+              {label}
+            </span>
+          ))}
+        </div>
+        <div style={{ position: "relative", height: 180 }}>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{
+              position: "absolute",
+              inset: 0,
+              width: "100%",
+              height: "100%",
+              overflow: "visible",
+            }}
+          >
+            {ticks.map(({ fraction }) => (
+              <line
+                key={fraction}
+                data-ac-part="grid"
+                x1="0"
+                y1={(1 - fraction) * 100}
+                x2="100"
+                y2={(1 - fraction) * 100}
+                vectorEffect="non-scaling-stroke"
+                strokeWidth="1"
+                style={{ stroke: v.grid }}
+              />
+            ))}
+            <polyline
+              data-ac-part="series"
+              points={coordinates.map(({ x, y }) => `${x},${y}`).join(" ")}
+              fill="none"
+              strokeWidth="2.5"
+              strokeLinejoin="round"
+              vectorEffect="non-scaling-stroke"
+              style={{ stroke: v.series }}
             />
-            <text
+          </svg>
+          {coordinates.map(({ x, y, month, valueCents }) => (
+            // One fixed 10px SVG per point, so points stay round at any size.
+            <svg
+              key={month}
+              width="10"
+              height="10"
+              viewBox="0 0 10 10"
+              style={{
+                position: "absolute",
+                left: `${x}%`,
+                top: `${y}%`,
+                margin: "-5px 0 0 -5px",
+                overflow: "visible",
+              }}
+            >
+              <circle
+                data-ac-part="point"
+                cx="5"
+                cy="5"
+                r="4"
+                style={{ fill: v.series }}
+              >
+                <title>{`${monthName(month)}: ${money(valueCents)}`}</title>
+              </circle>
+            </svg>
+          ))}
+        </div>
+        <div
+          aria-hidden="true"
+          style={{
+            gridColumn: 2,
+            display: "grid",
+            gridTemplateColumns: `repeat(${count}, minmax(0, 1fr))`,
+            marginTop: 8,
+            textAlign: "center",
+          }}
+        >
+          {coordinates.map(({ month }, index) => (
+            <span
+              key={month}
               data-ac-part="axis"
-              x="78"
-              y={184 - fraction * 150}
-              textAnchor="end"
-              fontSize="11"
-              style={{ fill: v.muted }}
+              style={{ color: v.muted, whiteSpace: "nowrap" }}
             >
-              {money(Math.round(max * fraction))}
-            </text>
-          </g>
-        ))}
-        <polyline
-          data-ac-part="series"
-          points={coordinates.map(({ x, y }) => `${x},${y}`).join(" ")}
-          fill="none"
-          strokeWidth="2.5"
-          strokeLinejoin="round"
-          style={{ stroke: v.series }}
-        />
-        {coordinates.map(({ x, y, month, valueCents }) => (
-          <g key={month}>
-            <circle
-              data-ac-part="point"
-              cx={x}
-              cy={y}
-              r="4"
-              style={{ fill: v.series }}
-            >
-              <title>{`${monthName(month)}: ${money(valueCents)}`}</title>
-            </circle>
-            <text
-              data-ac-part="axis"
-              x={x}
-              y="210"
-              textAnchor="middle"
-              fontSize="11"
-              style={{ fill: v.muted }}
-            >
-              {monthName(month)}
-            </text>
-          </g>
-        ))}
-      </svg>
+              {shortMonth(month)}
+              {/* The year only where it changes, so labels fit at 390px. */}
+              {index === 0 || month.endsWith("-01") ? (
+                <>
+                  <br />
+                  {month.slice(0, 4)}
+                </>
+              ) : null}
+            </span>
+          ))}
+        </div>
+      </div>
       <details data-ac-part="details" style={{ marginTop: 12 }}>
         <summary
           data-ac-part="summary"

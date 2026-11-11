@@ -30,7 +30,7 @@ Set these on any ancestor (scoped to your own selector) or through `style`. They
 
 - **Root classes:** `ac-metric-chart` (a `<figure>`) and `ac-metric-kpi` (a `<dl>`). `className` is appended to them.
 - **`style`** is merged last onto the root, so it overrides the root's inline defaults (`margin`, `font-family`, `color`, `background`, `border-radius`).
-- **Parts:** `[data-ac-part="…"]` on `caption`, `plot` (the `<svg>`), `grid`, `axis`, `series`, `point`, `details`, `summary` and `table` in the chart, and `label` and `value` in the KPI.
+- **Parts:** `[data-ac-part="…"]` on `caption`, `plot` (the `role="img"` chart area), `grid`, `axis`, `series`, `point`, `details`, `summary` and `table` in the chart, and `label` and `value` in the KPI.
 - **Tooltip:** each point has a native SVG `<title>`, for example "Jun 2026: $3,420.00".
 
 ### Rules
@@ -102,7 +102,12 @@ The example page's full host CSS is in [`themes.css`](../../../apps/demo/app/emb
 
 - **No shipped CSS.** The Analyticool default appearance exists only as copyable CSS (above and in the example), not as a package stylesheet or exported object.
 - **Browser floor:** the fallbacks use `color-mix()` (Chrome/Edge 111, Safari 16.2, Firefox 113). Older browsers ignore those declarations, which leaves the muted, line and grid colours at their initial values. Set the variables explicitly if you need older browsers.
-- **SVG text scales with the chart.** Axis labels are 11 viewBox units in a 700-unit-wide `viewBox`, so they shrink with the container. In the example's layout that is roughly 11 × 254 / 700 ≈ 4px at a 390px viewport and about 7–8px in a half-width desktop column. That is below SPEC §2's 12px floor, and it predates this change. Colour contrast passes, but size doesn't. The exact-value table is the readable, accessible alternative today. A responsive axis (HTML labels, or a `viewBox` that tracks the container width) should be decided in BRU-465.
+- **Responsive axes, never scaled.** The axis labels used to be SVG `<text>` in a 700-unit `viewBox`. They scaled with the chart, to roughly 4px at 390px. They are now HTML (`[data-ac-part="axis"]` spans) at `max(12px, 0.75em)`, positioned with the same percentages as the data, so they meet SPEC §2's 12px floor at any width.
+  - **Line layer:** only this stretches (`preserveAspectRatio="none"`), and `vector-effect: non-scaling-stroke` keeps the line at 2.5px and the grid at 1px.
+  - **Points:** each is a fixed 10px SVG, so it stays round.
+  - **Tick density:** month ticks are short ("Jan"), with the year only on the first tick and where the year changes. There are three value ticks in whole dollars; exact cents are in the table.
+  - **Fixed height:** the plot area is 180px tall.
+  - **Limit (estimated, not measured):** in a plot narrower than roughly 150px, six month labels at 12px would start to touch. Thinning ticks for that width is left to BRU-465.
 - **Inline specificity.** See rule 3. Variables and root `style` cover every colour, font and surface. Part-level typography needs `!important` today.
 - **Next.js note for the example:** global CSS is not removed on client-side navigation, so `themes.css` is selector-scoped, and the root layout no longer imports `globals.css`; the demo page at `/` imports it itself. This is example plumbing, not part of the SDK.
 
@@ -117,12 +122,13 @@ The example page's full host CSS is in [`themes.css`](../../../apps/demo/app/emb
 
 The package ships **TypeScript source, not a bundle**, so this measures the component source file. The size is checked in `packages/react/src/metric-chart.test.tsx` with Node's `zlib.gzipSync(source, { level: 9 })`:
 
-| `packages/react/src/metric-chart.tsx` | Raw     | gzip -9 |
-| ------------------------------------- | ------- | ------- |
-| Before (`main` at `de7dc47`)          | 5,317 B | —       |
-| After                                 | 7,923 B | 2,674 B |
+| `packages/react/src/metric-chart.tsx` | Raw      | gzip -9 |
+| ------------------------------------- | -------- | ------- |
+| Before (`main` at `de7dc47`)          | 5,317 B  | —       |
+| After, SVG-text axes (first pass)     | 7,923 B  | 2,674 B |
+| After, responsive HTML axes           | 10,980 B | 3,538 B |
 
-The unit test enforces a 3 KiB gzip budget. No CSS ships, so 0 B of CSS is added; the themes are host-owned and copied into the host's own stylesheet.
+The unit test enforces a 4 KiB gzip budget. It was 3 KiB until the responsive axis was added; the source includes explanatory comments. No CSS ships, so 0 B of CSS is added; the themes are host-owned and copied into the host's own stylesheet.
 
 ## Unstyled mode: not added
 
@@ -145,6 +151,7 @@ Automated:
   - The series and points use `var(--ac-series`.
   - No `<style>`, `<link>`, `<script>`, `transition`, `animation`, `url()` or Geist appears in the markup.
   - Each point has a `<title>` with the exact cents.
+  - Axis labels are HTML (no SVG `<text>`) with a `max(12px, 0.75em)` floor, and strokes are non-scaling.
   - The size budget holds.
   - The existing exact-cent, zero-series and invalid-result tests still pass.
 - **Browser smoke (`tests/smoke/embed-themes.spec.ts`, run with `pnpm build && pnpm test:smoke`):**
@@ -158,6 +165,7 @@ Automated:
   - Hovering a point exposes its `<title>`.
   - Under `prefers-reduced-motion: reduce` there are no animations, no transitions and no running `document.getAnimations()`.
   - There is no horizontal overflow at 390px.
+  - At 1280px and 390px, every axis label renders at 12px or more, and month and value labels don't overlap. Rendered size multiplies the font size by the screen transform of any enclosing `<svg>`, so scaled SVG text would fail.
   - There are no console, page or hydration errors.
 
 Screenshots, written by the same smoke run:

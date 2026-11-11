@@ -127,8 +127,23 @@ describe("metric presentation", () => {
       /data-ac-part="point"[^>]*fill:var\(--ac-series, currentColor\)/,
     );
     expect(chart).toMatch(/data-ac-part="grid"[^>]*stroke:var\(--ac-grid,/);
-    expect(chart).toMatch(/data-ac-part="axis"[^>]*fill:var\(--ac-muted,/);
+    expect(chart).toMatch(/data-ac-part="axis"[^>]*color:var\(--ac-muted,/);
     expect(kpi).toContain("font-size:var(--ac-figure-size, 2.25em)");
+  });
+
+  it("renders axis labels as unscaled HTML text with a 12px floor", () => {
+    const html = renderToStaticMarkup(<MetricChart result={empty} />);
+    // SVG text would scale with the viewBox; labels must not live in SVG.
+    expect(html).not.toContain("<text");
+    expect(html).toMatch(
+      /data-ac-part="plot"[^>]*font-size:max\(12px, 0\.75em\)/,
+    );
+    const axis = [...html.matchAll(/<span data-ac-part="axis"[^>]*>/g)];
+    expect(axis).toHaveLength(9); // three value ticks + six months
+    expect(html).toMatch(/vector-effect="non-scaling-stroke"/);
+    // Months are short, with the year shown only where it starts or changes.
+    expect(html).toContain(">Jan<br/>2026</span>");
+    expect(html).toContain(">Jun</span>");
   });
 
   it("gives each point a native tooltip with the exact value", () => {
@@ -142,8 +157,9 @@ describe("metric presentation", () => {
     // The package ships TypeScript source, not a bundle; this measures that.
     const source = readFileSync(new URL("./metric-chart.tsx", import.meta.url));
     const gzip = gzipSync(source, { level: 9 }).length;
-    // Measured 7,923 B raw / 2,674 B gzip -9 for BRU-485; budget 3 KiB gzip.
-    expect(gzip).toBeLessThanOrEqual(3072);
+    // Measured for BRU-485 after the responsive axis (R1): see
+    // docs/design/embed-theming/README.md. Budget 4 KiB gzip.
+    expect(gzip).toBeLessThanOrEqual(4096);
   });
 
   it("renders later published versions through the existing result components", () => {

@@ -45,6 +45,80 @@ const contrast = (text: string, background: string) => {
   return (hi! + 0.05) / (lo! + 0.05);
 };
 
+/**
+ * Every chart label must render at >= 12px (Darkroom SPEC §2 floor) and not
+ * collide. Rendered size accounts for SVG scaling: text inside an <svg> is
+ * multiplied by its screen transform, so scaled SVG labels would fail here.
+ */
+async function expectReadableAxes(page: Page, viewport: string) {
+  const sections = await page.evaluate(() =>
+    [...document.querySelectorAll<HTMLElement>("section[data-theme]")].map(
+      (section) => {
+        const labels = [
+          ...section.querySelectorAll<HTMLElement>(
+            '[data-ac-part="axis"], [data-ac-part="plot"] text',
+          ),
+        ];
+        const rendered = labels.map((el) => {
+          const svg = el.closest("svg");
+          const matrix = svg?.getScreenCTM();
+          const scale = matrix ? Math.hypot(matrix.a, matrix.b) : 1;
+          return {
+            text: el.textContent ?? "",
+            px: parseFloat(getComputedStyle(el).fontSize) * scale,
+          };
+        });
+        const rects = (selector: string) =>
+          [...section.querySelectorAll(selector)].map((el) => {
+            const r = el.getBoundingClientRect();
+            // Measure the text itself, not its grid column.
+            const range = document.createRange();
+            range.selectNodeContents(el);
+            const t = range.getBoundingClientRect();
+            return {
+              left: t.left,
+              right: t.right,
+              top: r.top,
+              bottom: r.bottom,
+            };
+          });
+        return {
+          theme: section.dataset.theme!,
+          rendered,
+          months: rects('[data-ac-part="plot"] > div:last-child > span'),
+          values: rects(
+            '[data-ac-part="plot"] > div:first-child > span[data-ac-part="axis"]',
+          ),
+        };
+      },
+    ),
+  );
+  expect(sections).toHaveLength(2);
+  for (const { theme, rendered, months, values } of sections) {
+    expect(rendered).toHaveLength(9);
+    for (const label of rendered) {
+      expect(
+        label.px,
+        `${viewport} ${theme} axis "${label.text}" renders at ${label.px.toFixed(1)}px`,
+      ).toBeGreaterThanOrEqual(12);
+    }
+    expect(months).toHaveLength(6);
+    for (let i = 1; i < months.length; i++) {
+      expect(
+        months[i]!.left,
+        `${viewport} ${theme} month labels ${i - 1}/${i} overlap`,
+      ).toBeGreaterThanOrEqual(months[i - 1]!.right);
+    }
+    expect(values).toHaveLength(3);
+    for (let i = 1; i < values.length; i++) {
+      expect(
+        values[i]!.top,
+        `${viewport} ${theme} value ticks ${i - 1}/${i} overlap`,
+      ).toBeGreaterThanOrEqual(values[i - 1]!.bottom);
+    }
+  }
+}
+
 test("server-renders both themed embeds from the same result", async ({
   request,
 }) => {
@@ -224,10 +298,10 @@ test("focus, contrast, tooltips, motion and narrow screens", async ({
         }
         return "rgb(255, 255, 255)";
       };
-      const text = (selector: string, svg = false) =>
+      const text = (selector: string) =>
         [...section.querySelectorAll(selector)].map((el) => ({
           selector,
-          color: svg ? getComputedStyle(el).fill : getComputedStyle(el).color,
+          color: getComputedStyle(el).color,
           background: surface(el),
         }));
       return [
@@ -237,7 +311,7 @@ test("focus, contrast, tooltips, motion and narrow screens", async ({
         ...text('[data-ac-part="summary"]'),
         ...text('[data-ac-part="table"] caption'),
         ...text('[data-ac-part="table"] td'),
-        ...text('[data-ac-part="axis"]', true),
+        ...text('[data-ac-part="axis"]'),
       ];
     }, theme);
     expect(pairs.length).toBeGreaterThan(10);
@@ -262,6 +336,8 @@ test("focus, contrast, tooltips, motion and narrow screens", async ({
   );
   expect(hovered).toBe("Jun 2026: $3,420.00");
 
+  await expectReadableAxes(page, "desktop 1280px");
+
   expect(await page.evaluate(() => document.getAnimations().length)).toBe(0);
   expect(
     await page.evaluate(() => {
@@ -279,6 +355,7 @@ test("focus, contrast, tooltips, motion and narrow screens", async ({
     client: document.documentElement.clientWidth,
   }));
   expect(overflow.scroll).toBeLessThanOrEqual(overflow.client);
+  await expectReadableAxes(page, "mobile 390px");
   expect(errors).toEqual([]);
 });
 
