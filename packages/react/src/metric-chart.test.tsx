@@ -151,6 +151,10 @@ describe("metric presentation", () => {
     [199, ["$1.99", "$1.00", "$0.00"]],
     [0, ["$0.02", "$0.01", "$0.00"]],
     [12_345, ["$123", "$62", "$0"]],
+    // Midpoints are rounded once: $50.495 reads "$50", $50.50 reads "$51".
+    [10_099, ["$101", "$50", "$0"]],
+    [10_100, ["$101", "$51", "$0"]],
+    [9_999, ["$99.99", "$50.00", "$0.00"]],
   ])(
     "labels value ticks meaningfully for a %i-cent maximum",
     (amountCents, expected) => {

@@ -84,11 +84,12 @@ const shortMonth = (month: string) =>
 // Value ticks use whole dollars (rounded) once the scale reaches $100, where
 // rounding moves a label by at most 0.5% of the axis. Below that, whole dollars
 // would repeat or misstate ticks (a 99-cent scale reads "$0", "$0", "$0"), so
-// ticks keep their cents.
-const tickLabel = (cents: number, max: number) =>
+// ticks keep their cents. `halfCents` is the tick's exact value, so each label
+// is rounded (half up) exactly once, at the precision it displays.
+const tickLabel = (halfCents: bigint, max: number) =>
   max < 10_000
-    ? money(cents)
-    : wholeDollars.format((BigInt(cents) + 50n) / 100n);
+    ? money(Number((halfCents + 1n) / 2n))
+    : wholeDollars.format((halfCents + 100n) / 200n);
 
 // Readable floor from Darkroom SPEC §2: nothing that is read is under 12px.
 const axisFontSize = "max(12px, 0.75em)";
@@ -110,9 +111,10 @@ export function MetricChart({
     y: (1 - point.valueCents / max) * 100,
     ...point,
   }));
-  const ticks = [1, 0.5, 0].map((fraction) => ({
-    fraction,
-    label: tickLabel(Math.round(max * fraction), max),
+  // Ticks at the maximum, half of it and zero, counted in halves of the maximum.
+  const ticks = [2, 1, 0].map((halves) => ({
+    fraction: halves / 2,
+    label: tickLabel(BigInt(max) * BigInt(halves), max),
   }));
 
   return (
