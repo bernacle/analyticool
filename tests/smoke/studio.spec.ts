@@ -37,6 +37,9 @@ async function expectNoHorizontalOverflow(page: Page) {
 }
 
 const live = (page: Page) => page.locator('[aria-live="polite"]');
+// Scoped to the Studio content: Next.js adds its own empty role="alert"
+// route announcer outside <main>.
+const alertIn = (page: Page) => page.locator("main").getByRole("alert");
 const heading = (page: Page) => page.getByRole("heading", { level: 1 });
 
 async function describeVia(page: Page, example: string) {
@@ -289,7 +292,7 @@ test("net revenue can be rejected with a reason; nothing is calculated", async (
   await describeVia(page, net);
   await page.getByRole("radio", { name: /Reject this proposal/ }).click();
   await page.getByRole("button", { name: "Reject proposal" }).click();
-  await expect(page.getByRole("alert")).toContainText(
+  await expect(alertIn(page)).toContainText(
     "Give a reason before rejecting this proposal.",
   );
   await page
@@ -315,7 +318,7 @@ test("unsupported free text fails clearly with no calculation", async ({
   await page.goto("/");
   await page.getByLabel("Metric description").fill("Show churn by plan.");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  const alert = page.getByRole("alert");
+  const alert = alertIn(page);
   await expect(alert).toContainText("Analyticool can't build that metric");
   await expect(alert).toContainText(monthly);
   await expect(alert).toContainText(net);
@@ -330,9 +333,7 @@ test("unsupported free text fails clearly with no calculation", async ({
 
   await page.getByLabel("Metric description").fill("");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
-  await expect(page.getByRole("alert")).toContainText(
-    "Describe a metric first",
-  );
+  await expect(alertIn(page)).toContainText("Describe a metric first");
   expect(errors).toEqual([]);
 });
 
