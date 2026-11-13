@@ -195,6 +195,7 @@ function DecisionBand({
           )}
           {phase === "approved" && (
             <button
+              id="publish-action"
               type="button"
               className="btn btn--primary"
               onClick={() => dispatch({ type: "publish" })}

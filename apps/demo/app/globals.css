@@ -506,11 +506,12 @@ input {
     display: grid;
     gap: 16px;
     margin-top: 16px;
+    /* The SDK sets background and radius inline from these variables. */
+    --ac-surface: var(--card);
+    --ac-radius: var(--radius-card);
   }
   .embed-preview .ac-metric-kpi,
   .embed-preview .ac-metric-chart {
-    border-radius: var(--radius-card);
-    background: var(--card);
     padding: 24px;
   }
 
@@ -541,7 +542,19 @@ input {
     min-height: 48px;
     cursor: pointer;
     font-weight: 500;
-    list-style-position: inside;
+    list-style: none;
+  }
+  .disclosure > summary::-webkit-details-marker {
+    display: none;
+  }
+  /* Explicit indicator: display:flex drops the native marker. */
+  .disclosure > summary::before {
+    content: "▸";
+    width: 1.25em;
+    color: var(--faint);
+  }
+  .disclosure[open] > summary::before {
+    content: "▾";
   }
   .disclosure__body {
     padding: 0 0 16px;

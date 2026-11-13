@@ -33,6 +33,7 @@ export function Studio() {
   const [live, setLive] = useState("");
   const heading = useRef<HTMLHeadingElement>(null);
   const previousStage = useRef(state.stage);
+  const previousStatus = useRef(state.proposal?.status);
 
   const dispatch = useCallback<Dispatch>((action) => {
     const next = studioTransition(latest.current, action);
@@ -41,10 +42,18 @@ export function Studio() {
     if (next.notice) setLive(next.notice);
   }, []);
 
+  const status = state.proposal?.status;
   useEffect(() => {
+    const statusChanged = previousStatus.current !== status;
     if (previousStage.current !== state.stage) heading.current?.focus();
+    // Approval and rejection keep the stage but remove the focused control:
+    // move focus to the next action, or to the rejection heading.
+    else if (statusChanged && status === "approved")
+      document.getElementById("publish-action")?.focus();
+    else if (statusChanged && status === "rejected") heading.current?.focus();
     previousStage.current = state.stage;
-  }, [state.stage]);
+    previousStatus.current = status;
+  }, [state.stage, status]);
 
   const { stage, proposal } = state;
   // A rejected revision leaves the published versions reachable from Embed.

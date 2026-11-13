@@ -104,6 +104,13 @@ for (const viewport of viewports) {
       page.getByText("Draft preview · synthetic fixtures · not approved"),
     ).toBeVisible();
     await expect(page.getByText("Draft · awaiting local review")).toBeVisible();
+    // Disclosures keep a visible indicator that follows the open state.
+    const marker = (name: string) =>
+      page
+        .locator(".disclosure > summary", { hasText: name })
+        .evaluate((el) => getComputedStyle(el, "::before").content);
+    expect(await marker("Meaning and time basis")).toBe('"▾"');
+    expect(await marker("Checks")).toBe('"▸"');
     await expectNoHorizontalOverflow(page);
     await page.screenshot({
       path: `${shots}/studio-review-${viewport.name}.png`,
@@ -129,14 +136,29 @@ for (const viewport of viewports) {
       ),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "Add it to your app" }).click();
+    // Focus moves to the next action after approval; still keyboard only.
+    await expect(
+      page.getByRole("button", { name: "Add it to your app" }),
+    ).toBeFocused();
+    await page.keyboard.press("Enter");
     await expect(heading(page)).toHaveText("Add it to your app");
+    await expect(heading(page)).toBeFocused();
     await expect(live(page)).toHaveText(
       "Published v1 in this session only. It is not persisted.",
     );
     const preview = page.getByRole("region", { name: "Embed preview" });
     await expect(preview).toContainText("Jun 2026 collected revenue");
     await expect(preview).toContainText("$3,420.00");
+    // Card surfaces come from the SDK's --ac-surface / --ac-radius variables.
+    for (const card of [".ac-metric-kpi", ".ac-metric-chart"]) {
+      const surface = await preview
+        .locator(card)
+        .evaluate((el) => [
+          getComputedStyle(el).backgroundColor,
+          getComputedStyle(el).borderRadius,
+        ]);
+      expect(surface).toEqual(["rgb(22, 20, 18)", "16px"]);
+    }
     await preview.getByText("View exact values", { exact: true }).click();
     const table = preview.getByRole("table");
     await expect(table.getByRole("row")).toHaveCount(7);
@@ -298,15 +320,44 @@ test("net revenue can be rejected with a reason; nothing is calculated", async (
   await page
     .getByLabel("Rejection reason")
     .fill("We need net revenue by customer, not a fallback.");
-  await page.getByRole("button", { name: "Reject proposal" }).click();
+  // Keyboard only: Tab from the reason field to the submit button, Enter.
+  await tabTo(page, page.getByRole("button", { name: "Reject proposal" }));
+  await page.keyboard.press("Enter");
   await expect(heading(page)).toHaveText("Proposal rejected");
+  await expect(heading(page)).toBeFocused();
   await expect(
     page.getByText("Reason: We need net revenue by customer, not a fallback."),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Nothing was calculated or published from this proposal."),
   ).toBeVisible();
   await expect(live(page)).toHaveText("Proposal v1 rejected in this session.");
   await expect(page.locator("main")).not.toContainText("$");
   await page.getByRole("button", { name: "Start over" }).click();
   await expect(heading(page)).toHaveText("What do you want to measure?");
+  expect(errors).toEqual([]);
+});
+
+test("rejecting a reviewed draft by keyboard focuses the rejection and says nothing was published", async ({
+  page,
+}) => {
+  const errors = trackErrors(page);
+  await page.goto("/");
+  await describeVia(page, monthly);
+  await expect(heading(page)).toBeFocused();
+  await tabTo(page, page.getByRole("button", { name: "Reject…" }));
+  await page.keyboard.press("Enter");
+  await tabTo(page, page.getByLabel("Rejection reason"));
+  await page.keyboard.type("Wrong time basis for us.");
+  await page.keyboard.press("Enter");
+  await expect(heading(page)).toHaveText("Proposal rejected");
+  await expect(heading(page)).toBeFocused();
+  await expect(
+    page.getByText(
+      "Nothing was published from this proposal; its draft preview is discarded.",
+    ),
+  ).toBeVisible();
+  await expect(page.getByText("Nothing was calculated")).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

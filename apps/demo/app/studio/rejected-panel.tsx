@@ -31,7 +31,9 @@ export function RejectedPanel({
         </span>
         <p className="mt-3">Reason: {proposal.rejectionReason}</p>
         <p className="meta mt-2">
-          Nothing was calculated or published from this proposal.
+          {proposal.definition
+            ? "Nothing was published from this proposal; its draft preview is discarded."
+            : "Nothing was calculated or published from this proposal."}
           {published
             ? " Earlier published versions stay unchanged. Core allows one revision per published version, so start over to try again."
             : " Start over to describe a new metric."}

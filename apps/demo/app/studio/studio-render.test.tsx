@@ -12,6 +12,7 @@ import {
 } from "../../lib/studio-flow";
 import { ClarifyStep } from "./clarify-step";
 import { EmbedStep } from "./embed-step";
+import { RejectedPanel } from "./rejected-panel";
 import { ReviewStep } from "./review-step";
 import { Studio } from "./studio";
 
@@ -116,6 +117,38 @@ describe("Studio rendering", () => {
     expect(html).toContain("Use monthly collected revenue instead");
     expect(html).toContain("Reject this proposal");
     expect(html).not.toMatch(/\$\d/);
+  });
+
+  it("says a rejected reviewed draft was not published, and an unresolved one was not calculated", () => {
+    const reason = { type: "reject", reason: "Not what we need." } as const;
+    const render = (state: StudioState) => {
+      if (!state.proposal) throw new Error("expected a proposal");
+      return text(
+        renderToStaticMarkup(
+          <RejectedPanel
+            proposal={state.proposal}
+            state={state}
+            dispatch={noop}
+            headingRef={heading()}
+          />,
+        ),
+      );
+    };
+    const reviewed = render(run(...monthly, reason));
+    expect(reviewed).toContain(
+      "Nothing was published from this proposal; its draft preview is discarded.",
+    );
+    expect(reviewed).not.toContain("Nothing was calculated");
+    const unresolved = render(
+      run(
+        { type: "setPrompt", prompt: proposalExamples.netRevenue },
+        { type: "describe" },
+        reason,
+      ),
+    );
+    expect(unresolved).toContain(
+      "Nothing was calculated or published from this proposal.",
+    );
   });
 
   it("embeds the published result with the real snippet and no hosted API sample", () => {
