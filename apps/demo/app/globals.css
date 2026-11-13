@@ -1,14 +1,78 @@
 @import "tailwindcss";
 
+/*
+ * Darkroom B+ tokens (docs/design/darkroom/SPEC.md §1–§2), loaded only by the
+ * Studio page at "/". Faces are roles: no web font is downloaded or bundled,
+ * so each role names a local system stack. The display role defaults to sans
+ * through [data-display="sans"] on the Studio root; remove that attribute to
+ * use the local editorial serif instead. Components never name a face.
+ */
 :root {
-  color-scheme: light;
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: Arial, Helvetica, sans-serif;
+  --ground: #0b0a09;
+  --card: #161412;
+  --nested: #211e1b;
+  --nested-2: #2a2723;
+  --overlay: #1e1c19;
+  --well: #0f0e0c;
+  --ink: #efebe4;
+  --muted: #ada79c;
+  --faint: #8f897e;
+  --off: #57524a;
+  --line-1: rgba(255, 240, 220, 0.065);
+  --line-2: rgba(255, 240, 220, 0.1);
+  --line-3: rgba(255, 240, 220, 0.17);
+  --accent: #aca4f6;
+  --ok: #76c39a;
+  --warn: #e6ae62;
+  --err: #ee8473;
+  --sx-kw: #c3b8f7;
+  --sx-fn: #e9d9b8;
+  --sx-str: #d8cba6;
+  --sx-num: #c2be72;
+  --sx-com: #8f897e;
+
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --serif: "Iowan Old Style", Charter, Georgia, serif;
+  --font-display: var(--serif);
+  --display-weight: 400;
+  --display-tracking: -0.01em;
+  --display-scale: 1;
+
+  --radius-card: 16px;
+  --radius-inner: 12px;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  color-scheme: dark;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+}
+
+[data-display="sans"] {
+  --font-display: var(--sans);
+  --display-weight: 600;
+  --display-tracking: -0.028em;
+  --display-scale: 0.86;
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-card: var(--card);
+  --color-nested: var(--nested);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --font-sans: var(--sans);
+  --font-mono: var(--mono);
 }
 
 body {
   margin: 0;
+  font: 400 14px/20px var(--sans);
+  -webkit-font-smoothing: antialiased;
 }
 button,
 summary,
@@ -19,9 +83,605 @@ button {
   cursor: pointer;
 }
 :focus-visible {
-  outline: 3px solid #2563eb;
-  outline-offset: 4px;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Programmatic focus on step headings (after a stage change) needs no ring. */
+h1[tabindex="-1"]:focus {
+  outline: none;
+}
+/* The composer shows focus on its container (SPEC §7), not the textarea. */
+.composer textarea:focus-visible {
+  outline: none;
 }
 ::selection {
-  background: #dbeafe;
+  background: rgba(172, 164, 246, 0.22);
+}
+textarea::placeholder,
+input::placeholder {
+  color: var(--faint);
+}
+textarea,
+input {
+  caret-color: var(--accent);
+}
+
+@layer components {
+  .sr-only-live {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* Shell */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-height: 64px;
+    padding: 0 24px;
+    border-bottom: 1px solid var(--line-1);
+  }
+  .topbar__brand {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .topbar__stages {
+    display: flex;
+    gap: 6px;
+    margin: 0 auto;
+    padding: 0;
+    list-style: none;
+    color: var(--faint);
+    font-size: 13px;
+  }
+  .topbar__stages li + li::before {
+    content: "—";
+    margin-right: 6px;
+    color: var(--off);
+  }
+  .topbar__stages [aria-current="step"] {
+    color: var(--ink);
+  }
+  .topbar__meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    color: var(--faint);
+    font-size: 13px;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 3px 10px;
+    background: var(--nested);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 18px;
+    white-space: nowrap;
+  }
+  .canvas {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 56px 29px 80px;
+  }
+  .canvas[data-stage="describe"] {
+    max-width: 720px;
+  }
+  .canvas[data-stage="clarify"] {
+    max-width: 680px;
+  }
+  .footer {
+    max-width: 880px;
+    margin: 0 auto;
+    padding: 24px 29px 48px;
+    border-top: 1px solid var(--line-1);
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 20px;
+  }
+
+  /* Type roles */
+  .eyebrow {
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 18px;
+  }
+  .display {
+    margin: 8px 0 0;
+    font-family: var(--font-display);
+    font-weight: var(--display-weight);
+    letter-spacing: var(--display-tracking);
+    font-size: calc(36px * var(--display-scale));
+    line-height: 1.1;
+    text-wrap: balance;
+  }
+  .lead {
+    margin: 12px 0 0;
+    max-width: 64ch;
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 24px;
+  }
+  .card-title {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 500;
+  }
+  .meta {
+    color: var(--faint);
+    font-size: 13px;
+    line-height: 18px;
+  }
+
+  /* Surfaces: elevation by lightness, no borders or shadows at rest */
+  .card {
+    margin-top: 16px;
+    border-radius: var(--radius-card);
+    background: var(--card);
+    padding: 24px;
+  }
+  .stack-lg {
+    margin-top: 36px;
+  }
+
+  /* Buttons */
+  .btn {
+    display: inline-grid;
+    place-items: center;
+    min-height: 36px;
+    padding: 0 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--nested);
+    color: var(--ink);
+    font: 500 14px/20px var(--sans);
+    transition:
+      transform 160ms var(--ease-out),
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+  .btn:hover {
+    background: var(--nested-2);
+  }
+  .btn:active {
+    transform: scale(0.97);
+  }
+  .btn--primary {
+    background: var(--ink);
+    color: var(--ground);
+  }
+  .btn--primary:hover {
+    background: #fff;
+  }
+  .btn--quiet {
+    background: transparent;
+    color: var(--muted);
+  }
+  .btn--quiet:hover {
+    background: var(--nested);
+    color: var(--ink);
+  }
+  .btn[aria-disabled="true"] {
+    background: transparent;
+    box-shadow: inset 0 0 0 1px var(--line-3);
+    color: var(--faint);
+    cursor: not-allowed;
+  }
+  .btn[aria-disabled="true"]:active {
+    transform: none;
+  }
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Status: dot + word, never colour alone */
+  .status {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  .status::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    box-sizing: border-box;
+    border: 1px dashed var(--muted);
+  }
+  .status[data-tone="ok"]::before {
+    border: 0;
+    background: var(--ok);
+  }
+  .status[data-tone="err"]::before {
+    border: 0;
+    background: var(--err);
+  }
+  .status[data-tone="warn"]::before {
+    border: 0;
+    background: var(--warn);
+  }
+
+  /* Describe composer */
+  .composer {
+    border-radius: var(--radius-card);
+    background: var(--card);
+    padding: 16px;
+  }
+  .composer:focus-within {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+  .composer textarea {
+    display: block;
+    width: 100%;
+    min-height: 96px;
+    resize: vertical;
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    font: 400 16px/24px var(--sans);
+  }
+  .composer__bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .chip {
+    min-height: 32px;
+    padding: 0 14px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--nested);
+    color: var(--muted);
+    font: 400 13px/18px var(--sans);
+    text-align: left;
+    transition:
+      transform 160ms var(--ease-out),
+      background-color 150ms ease;
+  }
+  .chip:hover {
+    background: var(--nested-2);
+    color: var(--ink);
+  }
+  .chip:active {
+    transform: scale(0.97);
+  }
+
+  /* Error band */
+  .error-band {
+    margin-top: 16px;
+    border-radius: var(--radius-inner);
+    background: var(--card);
+    padding: 16px;
+    box-shadow: inset 3px 0 0 var(--err);
+    color: var(--ink);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .error-band strong {
+    color: var(--err);
+    font-weight: 600;
+  }
+
+  /* Clarify options */
+  .options {
+    display: grid;
+    gap: 12px;
+    margin-top: 36px;
+  }
+  .option {
+    display: grid;
+    grid-template-columns: 18px 1fr;
+    gap: 12px;
+    width: 100%;
+    border: 0;
+    border-radius: var(--radius-card);
+    background: var(--card);
+    padding: 20px;
+    color: var(--ink);
+    text-align: left;
+    font: 400 16px/24px var(--sans);
+    transition:
+      transform 160ms var(--ease-out),
+      background-color 150ms ease;
+  }
+  .option:active {
+    transform: scale(0.99);
+  }
+  .option[aria-checked="true"] {
+    background: var(--nested);
+    box-shadow: inset 0 0 0 1px var(--accent);
+  }
+  .option__dot {
+    width: 18px;
+    height: 18px;
+    margin-top: 3px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 1px var(--line-3);
+  }
+  .option[aria-checked="true"] .option__dot {
+    box-shadow: inset 0 0 0 5px var(--accent);
+  }
+  .option__hint {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 20px;
+  }
+  .option__tag {
+    color: var(--accent);
+    font-size: 13px;
+  }
+
+  /* Fields */
+  .field-label {
+    display: block;
+    font-weight: 500;
+  }
+  .field {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    min-height: 40px;
+    border: 0;
+    border-radius: var(--radius-inner);
+    background: var(--nested);
+    padding: 8px 12px;
+    color: var(--ink);
+    font: 400 14px/20px var(--sans);
+  }
+
+  /* Review hero */
+  .hero__head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .hero__figure {
+    margin: 12px 0 0;
+    font: 500 40px/44px var(--sans);
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+  .tag {
+    display: inline-block;
+    border-radius: 999px;
+    padding: 2px 10px;
+    background: var(--nested);
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 18px;
+  }
+  .tag--today {
+    color: var(--ok);
+  }
+  .tag--proposed {
+    color: var(--accent);
+  }
+
+  /*
+   * Studio chart hosts: the SDK reads only --ac-* variables (BRU-485), so the
+   * Studio sets them like any host app would. Draft previews use a muted
+   * series; approved and published ones use the iris accent.
+   */
+  .chart-host {
+    --ac-font: var(--sans);
+    --ac-ink: var(--ink);
+    --ac-muted: var(--faint);
+    --ac-line: var(--line-2);
+    --ac-grid: var(--line-1);
+    --ac-series: var(--muted);
+    --ac-surface: transparent;
+    --ac-figure-size: 2.5rem;
+    margin-top: 24px;
+  }
+  .chart-host[data-approved="true"] {
+    --ac-series: var(--accent);
+  }
+  .embed-preview {
+    display: grid;
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .embed-preview .ac-metric-kpi,
+  .embed-preview .ac-metric-chart {
+    border-radius: var(--radius-card);
+    background: var(--card);
+    padding: 24px;
+  }
+
+  /* Decision band */
+  .decision {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .decision__why {
+    margin: 4px 0 0;
+    color: var(--muted);
+    max-width: 52ch;
+  }
+
+  /* Disclosures and rows */
+  .disclosure {
+    border-top: 1px solid var(--line-1);
+  }
+  .disclosure:first-of-type {
+    border-top: 0;
+  }
+  .disclosure > summary {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    cursor: pointer;
+    font-weight: 500;
+    list-style-position: inside;
+  }
+  .disclosure__body {
+    padding: 0 0 16px;
+    color: var(--muted);
+  }
+  .rows {
+    margin: 0;
+  }
+  .rows > div {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 4px 16px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line-1);
+  }
+  .rows dt {
+    color: var(--faint);
+  }
+  .rows dd {
+    margin: 0;
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+  .bullets {
+    margin: 0;
+    padding-left: 18px;
+    list-style: disc;
+  }
+  .bullets li + li {
+    margin-top: 8px;
+  }
+  code.inline {
+    font: 400 13px/18px var(--mono);
+    color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  /* Code block: scrolls horizontally inside itself only */
+  .code {
+    position: relative;
+    margin-top: 16px;
+    border-radius: var(--radius-inner);
+    background: var(--well);
+  }
+  .code__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 12px 0 20px;
+  }
+  .code pre {
+    margin: 0;
+    padding: 16px 20px 20px;
+    overflow-x: auto;
+    font: 400 13.5px/24px var(--mono);
+    color: var(--ink);
+    tab-size: 2;
+  }
+
+  /* Copy button: both labels share one grid cell so width never changes */
+  .copy {
+    display: inline-grid;
+  }
+  .copy > span {
+    grid-area: 1 / 1;
+    transition:
+      opacity 120ms ease,
+      transform 180ms var(--ease-out);
+  }
+  .copy[data-copied="true"] .copy__idle,
+  .copy:not([data-copied="true"]) .copy__done {
+    opacity: 0;
+  }
+  .copy:not([data-copied="true"]) .copy__done {
+    transform: scale(0.9);
+  }
+
+  @media (max-width: 960px) {
+    .topbar__stages {
+      display: none;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .topbar {
+      min-height: 56px;
+      padding: 0 16px;
+      flex-wrap: wrap;
+      row-gap: 4px;
+      padding-block: 8px;
+    }
+    .topbar__meta {
+      margin-left: 0;
+      flex-wrap: wrap;
+    }
+    .canvas {
+      padding: 32px 16px 56px;
+    }
+    .footer {
+      padding: 24px 16px 40px;
+    }
+    .display {
+      font-size: calc(30px * var(--display-scale));
+    }
+    .card {
+      padding: 20px;
+    }
+    .btn,
+    .chip,
+    .field {
+      min-height: 44px;
+    }
+    .decision .actions,
+    .decision .actions .btn {
+      width: 100%;
+    }
+    .code pre {
+      font-size: 12.5px;
+    }
+  }
+
+  /* Reduced motion: no travel or scale; fades stay at 150ms or less. */
+  @media (prefers-reduced-motion: reduce) {
+    .btn,
+    .chip,
+    .option {
+      transition:
+        background-color 120ms ease,
+        color 120ms ease;
+    }
+    .btn:active,
+    .chip:active,
+    .option:active {
+      transform: none;
+    }
+    .copy > span {
+      transition: opacity 120ms ease;
+      transform: none !important;
+    }
+  }
 }
