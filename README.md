@@ -136,7 +136,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Use only 
 
 ## Planning and next step
 
-The [BRU-470 bootstrap](https://linear.app/brunosimplicio/issue/BRU-470) is extended by [BRU-460 trusted proposals, approval, and versioning](https://linear.app/brunosimplicio/issue/BRU-460). Visual exploration is separate in [BRU-456](https://linear.app/brunosimplicio/issue/BRU-456); final identity and founder-provided HTML references are deferred. Real data access is gated on [BRU-461](https://linear.app/brunosimplicio/issue/BRU-461), covering secure PostgreSQL connections and tenant boundaries. Planning links may require workspace access; this README is sufficient to run and contribute.
+The [BRU-470 bootstrap](https://linear.app/brunosimplicio/issue/BRU-470) is extended by [BRU-460 trusted proposals, approval, and versioning](https://linear.app/brunosimplicio/issue/BRU-460). Visual exploration is separate in [BRU-456](https://linear.app/brunosimplicio/issue/BRU-456); final identity and founder-provided HTML references are deferred. Real data access is gated on [BRU-461](https://linear.app/brunosimplicio/issue/BRU-461), covering secure PostgreSQL connections and tenant boundaries. The proposed backend stack and deployment topology for persistence, isolated read-only execution and embed tokens is recorded in the [BRU-464 ADR](docs/architecture/backend-stack-and-deployment.md); nothing in it is deployed yet. Planning links may require workspace access; this README is sufficient to run and contribute.
 
 ## License
 
