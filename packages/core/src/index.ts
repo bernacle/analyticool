@@ -49,3 +49,30 @@ export type {
   NetReceiptsIssueCode,
   NetReceiptsResult,
 } from "./net-receipts";
+export {
+  boundedQueryRequestSchema,
+  connectionConfigSchema,
+  datasetAllowlistSchema,
+  defineDatasetAllowlist,
+  describeConnection,
+  evaluateRowCap,
+  isIssuedQueryPlan,
+  isIssuedTenantScope,
+  issueTenantScope,
+  planBoundedQuery,
+  QueryBoundaryError,
+  syntheticTenancyAllowlist,
+  tenantMembershipSchema,
+  tenantRoleSchema,
+  validateConnectionConfig,
+} from "./query-boundary";
+export type {
+  BoundedQueryPlan,
+  BoundedQueryRequest,
+  ConnectionConfig,
+  DatasetAllowlist,
+  QueryBoundaryIssueCode,
+  RowCapOutcome,
+  TenantMembership,
+  TenantScope,
+} from "./query-boundary";

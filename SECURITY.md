@@ -18,5 +18,6 @@ Include affected versions/commits, potential impact, and reproduction steps usin
 - The demo selects a fixed fictional workspace in app code. It accepts no tenant identifiers, SQL, database URLs, or execution requests from clients.
 - Client approval is a demonstration, not a security control or durable record.
 - Never attach production databases to this demo. Real connectors require server-side authorization, isolation, read-only execution controls, and secret management before use.
+- The required PostgreSQL boundary is defined in the [tenant-boundary ADR](docs/architecture/postgres-tenant-boundaries.md). The backend issues the tenant scope from server-held membership. Queries come only from allowlisted datasets and fixed parameterized templates, never client or LLM SQL. They run as a read-only, non-owner, non-`BYPASSRLS` role over `security_barrier` views with forced row-level security, inside read-only transactions with timeouts and row caps. `verification/postgres-isolation/` is a synthetic verification artifact. Run its suite only against a disposable cluster. It does not verify production isolation.
 
 Revoke or rotate exposed credentials promptly. Deleting a secret from a file does not remove it from history.

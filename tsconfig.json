@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.base.json",
-  "include": ["*.ts", "tests/**/*.ts"]
+  "include": [
+    "*.ts",
+    "tests/**/*.ts",
+    "verification/postgres-isolation/**/*.ts"
+  ]
 }
