@@ -6,9 +6,9 @@ import type { ReactNode } from "react";
 // host page with none of Analyticool's styles.
 
 export const metadata: Metadata = {
-  title: "Analyticool — Metric to React",
+  title: "Analyticool Studio — Metric to React",
   description:
-    "Review a metric definition, verify synthetic revenue, and embed it in React. An open-source prototype.",
+    "Describe, clarify, review and embed a metric over synthetic fixtures. Local, unauthenticated approval; an open-source prototype.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
