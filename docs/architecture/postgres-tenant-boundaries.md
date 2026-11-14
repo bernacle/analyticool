@@ -59,7 +59,7 @@ Branch point `0dea50c` (after BRU-464). Facts that constrain this design:
 | T15 | Plaintext transport / server impersonation                                 | `validateConnectionConfig` requires `sslmode=verify-full` in production and exactly one TCP DNS name or IP literal as host (no Unix-socket paths, `@` abstract sockets or comma-separated multi-hosts, where libpq would ignore `sslmode`); `local-test` mode only on loopback hosts                                                                                          |
 | T16 | Cross-tenant parent references                                             | Adjustments and parents are scoped independently. An in-scope refund pointing at another tenant's payment resolves to "not found", indistinguishable from a missing parent                                                                                                                                                                                                    |
 
-Out of scope: a compromised backend or executor host (it holds credentials and decides scope), database superuser compromise, side channels such as timing, and authentication of principals (BRU-492/494).
+Out of scope: a compromised backend or executor host (it holds credentials and decides scope), database superuser compromise, side channels such as timing, and authentication of principals and tenant membership verification (implemented in BRU-493).
 
 ## 3. The contract: four layers
 
