@@ -111,6 +111,8 @@ The two questions are predefined. **No LLM is called**, no schema discovery occu
 
 Fixtures contain two fictional workspaces. The demo selects one fixed workspace in application code, never from client input, before passing rows to core. This is fixture selection, **not tenant authorization**. Core assumes callers already authorized their records. Real database connections require a server-enforced security design.
 
+The [BRU-461 tenant-boundary ADR](docs/architecture/postgres-tenant-boundaries.md) specifies that design: threat model, a four-layer contract and a test matrix. Core exports the pure part (`issueTenantScope`, `defineDatasetAllowlist`, `planBoundedQuery`, `evaluateRowCap`, `validateConnectionConfig`): a server-issued tenant scope that cannot be forged, an explicit dataset allowlist, and a planner that only fills one fixed parameterized template. It accepts no SQL text and no client tenant IDs. `verification/postgres-isolation/` holds a **verification artifact, not a demo connector**: a synthetic schema with read-only roles, `security_barrier` views and forced row-level security, a reference executor, and an adversarial suite (`pnpm exec vitest run --config verification/postgres-isolation/vitest.config.ts`). That suite is skipped unless `ANALYTICOOL_PG_TEST_ADMIN_URL` points at a disposable PostgreSQL 16+ cluster. `pnpm dev` still needs no database. Production tenant isolation has not been verified.
+
 Published definitions and their proposal/review snapshots have immutable local version history, but no global registry, durable storage, or audit log. Approval is process-local state and resets on reload; it is not an authorization boundary. Presentation components do not enforce approval. Natural-language generation, net revenue by customer, PostgreSQL and other connectors, CSV/Excel import, RAG, MCP, authentication, billing, and hosted infrastructure remain future work. The separate net receipts fixture checks local arithmetic and scope policy; production data, source completeness/freshness and real tenant isolation have not been verified.
 
 ## Quality checks
@@ -122,6 +124,7 @@ pnpm typecheck
 pnpm test
 pnpm verify:net-receipts        # replay and check the committed synthetic evidence
 python3 verification/net-receipts/oracle.py  # independent baseline arithmetic
+pnpm exec vitest run --config verification/postgres-isolation/vitest.config.ts  # optional; real-Postgres cases need ANALYTICOOL_PG_TEST_ADMIN_URL
 pnpm build
 pnpm start                     # serve the production build
 ```
@@ -136,7 +139,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md). Use only 
 
 ## Planning and next step
 
-The [BRU-470 bootstrap](https://linear.app/brunosimplicio/issue/BRU-470) is extended by [BRU-460 trusted proposals, approval, and versioning](https://linear.app/brunosimplicio/issue/BRU-460). Visual exploration is separate in [BRU-456](https://linear.app/brunosimplicio/issue/BRU-456); final identity and founder-provided HTML references are deferred. Real data access is gated on [BRU-461](https://linear.app/brunosimplicio/issue/BRU-461), covering secure PostgreSQL connections and tenant boundaries. The proposed backend stack and deployment topology for persistence, isolated read-only execution and embed tokens is recorded in the [BRU-464 ADR](docs/architecture/backend-stack-and-deployment.md); nothing in it is deployed yet. Planning links may require workspace access; this README is sufficient to run and contribute.
+The [BRU-470 bootstrap](https://linear.app/brunosimplicio/issue/BRU-470) is extended by [BRU-460 trusted proposals, approval, and versioning](https://linear.app/brunosimplicio/issue/BRU-460). Visual exploration is separate in [BRU-456](https://linear.app/brunosimplicio/issue/BRU-456); final identity and founder-provided HTML references are deferred. Real data access is gated on [BRU-461](https://linear.app/brunosimplicio/issue/BRU-461), covering secure PostgreSQL connections and tenant boundaries. Its [contract and test matrix](docs/architecture/postgres-tenant-boundaries.md) are what [BRU-493](https://linear.app/brunosimplicio/issue/BRU-493) must adopt without weakening. The proposed backend stack and deployment topology for persistence, isolated read-only execution and embed tokens is recorded in the [BRU-464 ADR](docs/architecture/backend-stack-and-deployment.md); nothing in it is deployed yet. Planning links may require workspace access; this README is sufficient to run and contribute.
 
 ## License
 
