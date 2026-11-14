@@ -1,6 +1,6 @@
 # Backend stack and basic deployment topology
 
-Status: **Proposed** — BRU-464, 2026-11-14. Decision owner: repository owner. Unblocks [BRU-492](https://linear.app/brunosimplicio/issue/BRU-492/persist-approved-metrics-and-build-a-reusable-metrics-library) (persistent metric metadata and workspace authorization), [BRU-493](https://linear.app/brunosimplicio/issue/BRU-493/build-mvp-read-only-postgresql-source-connector-and-metric-execution) (isolated read-only PostgreSQL execution) and [BRU-494](https://linear.app/brunosimplicio/issue/BRU-494/define-hosted-metric-api-and-secure-embed-token-authorization-contract) (hosted token boundary).
+Status: **Proposed** — BRU-464, 2026-11-14; owner's provisional decisions recorded 2026-11-14 (§6). Decision owner: repository owner. Unblocks [BRU-492](https://linear.app/brunosimplicio/issue/BRU-492/persist-approved-metrics-and-build-a-reusable-metrics-library) (persistent metric metadata and workspace authorization), [BRU-493](https://linear.app/brunosimplicio/issue/BRU-493/build-mvp-read-only-postgresql-source-connector-and-metric-execution) (isolated read-only PostgreSQL execution) and [BRU-494](https://linear.app/brunosimplicio/issue/BRU-494/define-hosted-metric-api-and-secure-embed-token-authorization-contract) (hosted token boundary).
 
 This ADR records the smallest backend stack those three issues need, using the existing Vercel, Supabase and Railway plans. It is a design record only: **this spike changes no code, dependencies, environment variables, deploy configuration or cloud services**, following the 2026-11-03 decision ("No infrastructure changes at bootstrap") and [CONTRIBUTING.md](../../CONTRIBUTING.md). Everything in §§2–4 is a proposed design; nothing here is implemented or deployed.
 
@@ -31,7 +31,7 @@ Each decision states the choice, why, and what would make us revisit it.
 
 **c. Developer SDK — keep `@analyticool/react` stateless.** The embeddable surface stays `<MetricKpi result />` / `<MetricChart result />`, which never fetch or hold credentials. BRU-494 adds, at most, a small server-side helper for the customer's backend to mint embed tokens and a thin fetch of a validated result; it must work in any Node server, not only Next.js. No package is published until package output and compatibility checks exist (README). _Revisit:_ when an external developer needs an npm release.
 
-**d. Metadata store (BRU-492) — Postgres on the existing Supabase plan.** It holds only Analyticool's own records: workspaces, memberships, connection references, metric definitions, immutable published versions and review/approval records with reviewer identity and timestamps. **No customer analytical data is copied into it.** Workspace authorization is enforced in server code on every read and write, deriving the workspace from the authenticated session and membership rows, never from a client-supplied ID. Version uniqueness and immutability are enforced by database constraints, re-establishing the authority that today is process-local. Row Level Security may be added as **defense in depth only**; it is not the primary control while the auth provider is undecided (§6). Drizzle is **optional and scoped to this metadata schema** (typed tables and migrations); it is never a required abstraction over analytical SQL. _Revisit:_ if metadata volume or connection counts exceed the plan (§5).
+**d. Metadata store (BRU-492) — Postgres on the existing Supabase plan.** It holds only Analyticool's own records: workspaces, memberships, connection references, metric definitions, immutable published versions and review/approval records with reviewer identity and timestamps. **No customer analytical data is copied into it.** Workspace authorization is enforced in server code on every read and write, deriving the workspace from the authenticated session and membership rows, never from a client-supplied ID. Version uniqueness and immutability are enforced by database constraints, re-establishing the authority that today is process-local. Row Level Security may be added as **defense in depth only**; it is not the primary control until BRU-492 has adopted the provisionally chosen Supabase Auth (§6). Drizzle is **optional and scoped to this metadata schema** (typed tables and migrations); it is never a required abstraction over analytical SQL. _Revisit:_ if metadata volume or connection counts exceed the plan (§5).
 
 **e. Query engine (BRU-493) — Postgres first, on the customer's own Postgres.** Execution reads the customer's PostgreSQL directly, with layered controls: a customer-created read-only role, `BEGIN READ ONLY` transactions, `statement_timeout` and `idle_in_transaction_session_timeout`, row and byte limits on results, and SQL **compiled only from approved, published definitions** with bound parameters. Clients never send SQL. Query engine choice is separate from HTTP routing: DuckDB or ClickHouse are considered only if benchmarks on realistic data show Postgres cannot meet latency or cost targets. _Revisit:_ with benchmark evidence from BRU-493.
 
@@ -41,7 +41,7 @@ Each decision states the choice, why, and what would make us revisit it.
 
 **h. Sessions and embed tokens (BRU-494).**
 
-- _Dashboard users:_ short-lived server-side sessions (HTTP-only, `Secure`, `SameSite` cookies with short expiry and refresh), with authorization re-checked against memberships on each request. Supabase Auth is the default candidate because it reuses the existing plan; BRU-492 confirms it (§6).
+- _Dashboard users:_ short-lived server-side sessions (HTTP-only, `Secure`, `SameSite` cookies with short expiry and refresh), with authorization re-checked against memberships on each request. Supabase Auth is the provisional choice for the MVP dashboard because it reuses the existing plan (§6).
 - _Embeds:_ the customer's backend holds an Analyticool workspace secret and mints a **short-lived signed token** (minutes, not hours) scoped to workspace, metric ID, published version and allowed parameter values, with audience, expiry and key ID claims. The browser passes only this token. The hosted API verifies it, derives tenant scope from the token server-side, ignores client-supplied workspace or SQL, and returns a result validated by core schemas. The browser never sees source credentials or workspace secrets. Signing algorithm (HMAC per workspace vs. asymmetric/JWKS) and rotation are decided in BRU-494; this ADR fixes only the boundary.
 
 ## 3. Basic deployment topology
@@ -83,7 +83,7 @@ Trust boundaries: (1) browser ↔ Vercel, crossed only with a session cookie or 
 | Customer backend    | Customer infrastructure | Mints embed tokens for its signed-in users                                         | Analyticool workspace secret                                                         |
 | Browser             | End user                | Renders stateless components with validated results                                | Short-lived embed token or session cookie only                                       |
 
-Credential storage default: connection credentials are encrypted at the application level with a key held only in the Railway service; Supabase stores ciphertext and the web tier cannot decrypt it (§6).
+Credential storage (provisional decision, §6): connection credentials are encrypted at the application level with a key held only by the backend execution service on Railway, with planned key rotation; Supabase stores ciphertext and the web tier cannot decrypt it.
 
 ## 4. Cost
 
@@ -110,13 +110,15 @@ The following are **assumptions, not verified facts**. Each must be checked befo
 | Vercel function duration limits and region placement relative to Supabase and Railway                     | Whether synchronous execution fits; latency                       | BRU-494  |
 | Real tenant isolation end to end (token scope, membership checks, executor scoping)                       | Today only fixture selection exists, not authorization            | BRU-494  |
 
-## 6. Decisions for review (open questions, conservative defaults)
+## 6. Owner's provisional decisions (2026-11-14)
 
-- **Plan contents:** listed as unverified (§5) until the owner supplies plan details.
-- **Identity provider:** Supabase Auth is the default candidate, but authorization stays in server code; RLS is defense in depth only until BRU-492 confirms the provider.
-- **Credential storage:** app-level encryption with the key only in the Railway service; Supabase stores ciphertext. Owner to confirm vs. Supabase Vault or Railway-only secrets.
-- **Executor placement:** separate Railway service from BRU-493 day one, plain Node HTTP, no Hono.
-- **Embed signing:** boundary fixed here; algorithm and rotation left to BRU-494.
+The repository owner resolved the open questions from this spike as follows. They are provisional: each still goes through review in the issue that implements it, and can be revisited with evidence.
+
+- **Dashboard identity:** use Supabase Auth for the MVP dashboard. Authorization still runs in server code against membership rows; RLS stays defense in depth until BRU-492 has adopted Supabase Auth.
+- **Customer database credentials:** store them encrypted. Only the backend can access the key: it is held by the execution service on Railway, never by the browser, the Vercel web tier or Supabase, which stores only ciphertext. Plan for key rotation (versioned keys, so credentials can be re-encrypted under a new key) before any real customer credentials are stored.
+- **Executor placement:** a separate Railway service for secure PostgreSQL metric execution, as in §2f.
+- **Plan limits:** verify the actual Supabase, Railway and Vercel plan limits (§5) before any deployment. Until then they remain unverified assumptions.
+- **Embed token signing:** deferred to BRU-494, which should prefer short-lived tokens issued by the customer's backend (§2h). This ADR fixes only the boundary.
 
 ## 7. Non-goals and deferred
 
