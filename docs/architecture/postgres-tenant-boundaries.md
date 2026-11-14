@@ -1,6 +1,6 @@
 # Secure PostgreSQL connection and multi-tenant query boundaries
 
-Status: **Proposed** — BRU-461 security spike, 2026-11-14. Decision owner: repository owner and the BRU-493 implementer/reviewer. Follow-up: [BRU-493](https://linear.app/brunosimplicio/issue/BRU-493/build-mvp-read-only-postgresql-source-connector-and-metric-execution) (MVP read-only PostgreSQL source and bounded metric execution).
+Status: **Proposed** — BRU-461 security spike, 2026-11-14; owner's provisional decisions recorded 2026-11-14 (§7). Decision owner: repository owner and the BRU-493 implementer/reviewer. Follow-up: [BRU-493](https://linear.app/brunosimplicio/issue/BRU-493/build-mvp-read-only-postgresql-source-connector-and-metric-execution) (MVP read-only PostgreSQL source and bounded metric execution).
 
 This spike defines a **testable tenant-isolation and least-privilege contract** for reading a PostgreSQL source. It is not a production connector. It ships three artifacts:
 
@@ -22,7 +22,7 @@ Branch point `0dea50c` (after BRU-464). Facts that constrain this design:
 | Process-local `WeakSet` capabilities already stop cloned/parsed lifecycle objects from gaining authority      | [`proposal.ts`](../../packages/core/src/proposal.ts), [metric provenance §8](metric-provenance.md#8-trust-and-security-boundaries) |
 | Every fact source and parent lookup must be scoped. A cross-tenant parent is rejected, never revealed         | [metric provenance §4, §8](metric-provenance.md)                                                                                   |
 | Execution reads the customer's Postgres from an isolated service: read-only role, timeouts, no client SQL     | [BRU-464 ADR §2e–f](backend-stack-and-deployment.md)                                                                               |
-| CI has no service containers and no Postgres client dependency                                                | [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml), [`package.json`](../../package.json)                                 |
+| At the branch point, CI had no service containers and no Postgres client dependency                           | [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml), [`package.json`](../../package.json)                                 |
 
 ## 2. Threat model
 
@@ -150,8 +150,9 @@ PGBIN=/path/to/postgresql/bin bash verification/postgres-isolation/run-local.sh 
 ### Verification status
 
 - Unit (`U`) and executor-script (`X`) tests pass locally on Node 24.21.0.
-- The real-PostgreSQL (`D`) suite was written against PostgreSQL 16/17 semantics but **was not executed by the implementer**: the spike's sandbox could not start a local server. The orchestrator's check runs it on Homebrew `postgresql@17`. Until a green run is recorded here, treat the `D` rows as specified, not verified.
-- The suite is not in GitHub Actions. Adding a CI job with a Postgres service container needs a workflow change, which was outside this spike's permissions (see §7).
+- The real-PostgreSQL (`D`) suite was not executed by the implementer, whose sandbox could not start a server. It was first executed by the Orchestrator's sandboxed `postgres-isolation` check on Homebrew PostgreSQL 17.11 (93/93 passed on the reviewed commit `cf05ed57`), and then in a local disposable cluster via `run-local.sh` (93/93: 87 in `isolation.test.ts`, 6 in `executor-script.test.ts`).
+- **CI:** [`.github/workflows/postgres-isolation.yml`](../../.github/workflows/postgres-isolation.yml) runs the suite on every pull request and push to `main` against a `postgres:17` service container with `psql` 17 from PGDG. It is separate from `ci.yml`, which is unchanged. Because `vitest run` exits 0 when tests are skipped (the `D` cases skip without `ANALYTICOOL_PG_TEST_ADMIN_URL`), the job then runs [`scripts/assert-postgres-isolation-report.mjs`](../../scripts/assert-postgres-isolation-report.mjs) on the Vitest JSON report. It fails unless both suite files ran, every test passed, none was skipped or todo, and at least 93 tests passed (87 + 6). Raise that floor when cases are added; lowering it is a reviewed change to the security evidence.
+- PostgreSQL 16 is the supported minimum (§7) but CI exercises 17 only.
 
 ## 5. BRU-493 adoption criteria (must not weaken)
 
@@ -165,20 +166,21 @@ BRU-493 may change implementation details, but it must keep each of these proper
 6. Every query runs in a `READ ONLY` transaction with local statement, lock and idle timeouts no larger than the allowlist maximum, and `LIMIT cap+1`. Exceeding the cap blocks the result.
 7. Production connections use `sslmode=verify-full` with a pinned CA. Credentials stay in the isolated executor (BRU-464 §2f), never in logs, errors, argv or the browser.
 8. Errors cross the boundary only as generic codes.
-9. The adversarial `D` suite (or its equivalent) runs in CI against a real PostgreSQL. Every matrix row stays covered, including both tenant directions and cross-tenant parents.
+9. The adversarial `D` suite (or its equivalent) runs in CI against a real PostgreSQL, fail-closed on missing or skipped cases as in `postgres-isolation.yml`. Every matrix row stays covered, including both tenant directions and cross-tenant parents.
 
 ## 6. Non-goals
 
-No production connector, connection management UI, secret storage, pooling, or hosted service. No Stripe or other source, no generic multi-source federation, no LLM SQL, no general SQL planner, no metric execution against PostgreSQL, no demo or UI changes, no new dependencies. Principal authentication remains BRU-492/494.
+No production connector, connection management UI, secret storage, pooling, or hosted service. No Stripe or other source, no generic multi-source federation, no LLM SQL, no general SQL planner, no metric execution against PostgreSQL, no demo or UI changes, no new dependencies. Real backend authentication and tenant membership verification are implemented in BRU-493; client-supplied tenant identity is never trusted.
 
-## 7. Decisions for review (open questions)
+## 7. Owner's provisional decisions (2026-11-14)
 
-Each choice is the most conservative one and easy to change.
+The repository owner resolved the spike's open questions as follows. They are provisional and can be revisited with evidence in BRU-493.
 
-- **Postgres client and CI job.** I added no dependency (`pg` is not installed, and dependency changes were out of scope). The executor uses the `psql` client through `child_process`. I did not edit GitHub Actions (workflow edits were out of scope). The suite is opt-in via `ANALYTICOOL_PG_TEST_ADMIN_URL` and its own Vitest config. I did not add a `package.json` script, because `package.json` is pinned by the net receipts evidence digest and changing it would mean regenerating unrelated evidence. Recommendation: a follow-up adds the script, regenerates that evidence deliberately, and adds a CI job with a `postgres:17` service container.
-- **Minimum PostgreSQL version: 16** (server and `psql`). The reference uses `security_invoker` view options (15+) and `psql \bind` (16+). It does not rely on `security_invoker = true`.
-- **Location.** The pure contract lives in `packages/core` (the repository's home for contracts). The executor stays in `verification/` until BRU-493 decides where the isolated executor service lives.
-- **Default limits are placeholders:** 10,000 rows, 5 s statement timeout, 1 s lock timeout, 366-day range per dataset. Allowlist ceilings are 100,000 rows and 30 s. They are product decisions for BRU-493.
-- **Exceeding the row cap blocks** the result (no partial rows), consistent with metric provenance's "no complete result".
-- **No EXPLAIN-based cost ceiling.** Timeouts, range limits and row caps only. An `EXPLAIN` cost check is a planner estimate, not a bound, and can be added later as an extra gate.
-- **Principals and memberships** are synthetic, server-held input here. Their authentication is BRU-492/494.
+- **CI:** a separate GitHub Actions workflow runs the real-PostgreSQL suite against a PostgreSQL 17 service container, fail-closed on missing, skipped or failed tests (§4 "Verification status"). The existing CI is unchanged.
+- **Postgres client:** keep the `psql`-based harness. `pg` is added only if it becomes technically necessary; it is not installed. `package.json` stays unchanged because the net receipts evidence pins it, so the suite has no root script.
+- **Minimum PostgreSQL version: 16+** (server and `psql`). The reference uses `security_invoker` view options (15+) and `psql \bind` (16+). It does not rely on `security_invoker = true`.
+- **Location:** the pure query boundary stays in `packages/core`. The executor stays in `verification/` until BRU-493 decides where the isolated executor service lives.
+- **Provisional limits:** 10,000 rows and a 5 s statement timeout per dataset (with a 1 s lock timeout and a 366-day range). Allowlist ceilings stay 100,000 rows and 30 s.
+- **Row cap:** exceeding it fails explicitly. A result is never silently truncated or returned partially, consistent with metric provenance's "no complete result".
+- **No EXPLAIN-based cost ceiling** for now. Timeouts, range limits and row caps only. An `EXPLAIN` estimate is not a bound and can be added later as an extra gate.
+- **Authentication:** BRU-493 implements real backend authentication and tenant membership verification. Principals and memberships here are synthetic, server-held input. Client-supplied tenant identity is never trusted.

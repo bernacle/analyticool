@@ -1,0 +1,68 @@
+name: PostgreSQL isolation
+
+# BRU-461: runs the adversarial tenant-isolation suite against a real,
+# disposable PostgreSQL 17 service container. Separate from ci.yml so the
+# existing pipeline is unchanged. Synthetic data only; the service and its
+# throwaway superuser password exist only for the life of this job.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postgres-isolation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  postgres-isolation:
+    name: PostgreSQL 17 tenant isolation
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      ANALYTICOOL_PG_TEST_ADMIN_URL: postgres://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install psql 17 (PGDG)
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y -q postgresql-common
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y
+          sudo apt-get install -y -q postgresql-client-17
+          echo "/usr/lib/postgresql/17/bin" >> "$GITHUB_PATH"
+      - name: Show versions
+        run: |
+          psql --version
+          psql "$ANALYTICOOL_PG_TEST_ADMIN_URL" -Atc "select version()"
+      - name: Run the real-PostgreSQL suite
+        run: >-
+          pnpm exec vitest run
+          --config verification/postgres-isolation/vitest.config.ts
+          --reporter=default --reporter=json
+          --outputFile.json="$RUNNER_TEMP/postgres-isolation-report.json"
+      - name: Fail if the suite is missing, skipped or incomplete
+        if: ${{ !cancelled() }}
+        run: node scripts/assert-postgres-isolation-report.mjs "$RUNNER_TEMP/postgres-isolation-report.json"
