@@ -59,4 +59,61 @@ describe("reference executor script", () => {
       code: "CONNECTION_REJECTED",
     });
   });
+
+  const secret = "synthetic-pass-do-not-echo";
+  const config = {
+    mode: "local-test",
+    host: "localhost",
+    port: 1,
+    database: "analytics",
+    user: "analyticool_app",
+    password: secret,
+    sslmode: "disable",
+  } as const;
+  const neverRun = () => {
+    throw new Error("runner must not be called");
+  };
+
+  it("rejects socket hosts and NUL credentials before spawning, without echoing them", async () => {
+    for (const bad of [
+      { ...config, mode: "production", sslmode: "verify-full", host: "/tmp" },
+      { ...config, host: "/tmp" },
+      { ...config, password: `${secret}\u0000` },
+      { ...config, user: "analyticool_app\u0000" },
+    ]) {
+      const outcome = await executeBoundedQuery(bad, plan, neverRun);
+      expect(outcome).toEqual({
+        status: "failed",
+        code: "CONNECTION_REJECTED",
+      });
+      expect(JSON.stringify(outcome)).not.toContain(secret);
+    }
+  });
+
+  it("contains runner exceptions as a generic code", async () => {
+    const leaky = async () => {
+      throw new TypeError(`spawn failed: PGPASSWORD=${secret}`);
+    };
+    const syncLeaky = () => {
+      throw new TypeError(`spawn failed: PGPASSWORD=${secret}`);
+    };
+    for (const runner of [leaky, syncLeaky]) {
+      const outcome = await executeBoundedQuery(config, plan, runner);
+      expect(outcome).toEqual({ status: "failed", code: "QUERY_FAILED" });
+      expect(JSON.stringify(outcome)).not.toContain(secret);
+    }
+  });
+
+  it("a missing psql binary yields a generic code, not an exception", async () => {
+    const previous = process.env.ANALYTICOOL_PSQL;
+    process.env.ANALYTICOOL_PSQL = "/nonexistent/analyticool-psql";
+    try {
+      const outcome = await executeBoundedQuery(config, plan);
+      expect(outcome).toEqual({ status: "failed", code: "CONNECTION_FAILED" });
+      expect(JSON.stringify(outcome)).not.toContain(secret);
+    } finally {
+      if (previous === undefined) delete process.env.ANALYTICOOL_PSQL;
+      else process.env.ANALYTICOOL_PSQL = previous;
+    }
+  });
 });

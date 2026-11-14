@@ -268,6 +268,30 @@ describe("dataset and field allowlist", () => {
     ).toBe("INVALID_REQUEST");
   });
 
+  it.each(["", "\u0000", "acme-pay-1\u0000", "a\nb", "a\rb", "\u007f"])(
+    "rejects the filter value %j with an explicit code",
+    (value) => {
+      expect(
+        code(() =>
+          planBoundedQuery(
+            acme(),
+            request({ filters: [{ field: "id", op: "eq", value }] }),
+          ),
+        ),
+      ).toBe("INVALID_FILTER_VALUE");
+      expect(
+        code(() =>
+          planBoundedQuery(
+            acme(),
+            request({
+              filters: [{ field: "id", op: "in", values: ["ok", value] }],
+            }),
+          ),
+        ),
+      ).toBe("INVALID_FILTER_VALUE");
+    },
+  );
+
   it("only plans with an allowlist registered by defineDatasetAllowlist", () => {
     const copy = JSON.parse(JSON.stringify(syntheticTenancyAllowlist));
     expect(code(() => planBoundedQuery(acme(), request(), copy))).toBe(
@@ -487,6 +511,61 @@ describe("connection settings", () => {
       "PRIVILEGED_ROLE",
     );
   });
+
+  it.each([
+    "/tmp",
+    "/var/run/postgresql",
+    "@abstract-socket",
+    "db1.example.invalid,db2.example.invalid",
+    "db.example.invalid:5432",
+    "db.example.invalid/x",
+    "user@db.example.invalid",
+    " db.example.invalid",
+    "-db.example.invalid",
+  ])("rejects non-TCP or multi-host value %j even with verify-full", (host) => {
+    expect(code(() => validateConnectionConfig({ ...production, host }))).toBe(
+      "INSECURE_CONNECTION",
+    );
+    expect(
+      code(() =>
+        validateConnectionConfig({
+          ...production,
+          host,
+          mode: "local-test",
+          sslmode: "disable",
+        }),
+      ),
+    ).toBe("INSECURE_CONNECTION");
+  });
+
+  it.each(["10.0.0.5", "2001:db8::1", "db-1.internal.example.invalid"])(
+    "accepts the single TCP host %s",
+    (host) => {
+      expect(
+        code(() => validateConnectionConfig({ ...production, host })),
+      ).toBe("no-error");
+    },
+  );
+
+  it.each(["password", "user", "database", "host", "sslrootcert"])(
+    "rejects NUL and control characters in %s without echoing them",
+    (key) => {
+      for (const bad of [`${password}\u0000x`, `${password}\nx`]) {
+        try {
+          validateConnectionConfig({ ...production, [key]: bad });
+          throw new Error("expected rejection");
+        } catch (error) {
+          expect(error).toBeInstanceOf(QueryBoundaryError);
+          expect((error as QueryBoundaryError).code).toBe(
+            "INVALID_CONNECTION_CONFIG",
+          );
+          expect(`${String(error)} ${(error as Error).stack}`).not.toContain(
+            password,
+          );
+        }
+      }
+    },
+  );
 
   it("never echoes the password or host in errors", () => {
     const attempts: unknown[] = [

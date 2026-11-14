@@ -5,7 +5,7 @@ import {
   validateConnectionConfig,
   type BoundedQueryPlan,
 } from "../../packages/core/src/query-boundary";
-import { runPsql } from "./psql";
+import { runPsql, type PsqlRun } from "./psql";
 
 /**
  * BRU-461 safe reference executor (Layer 4). Verification artifact, not a
@@ -86,6 +86,8 @@ export function executorScript(plan: BoundedQueryPlan): string {
 export async function executeBoundedQuery(
   connection: unknown,
   plan: BoundedQueryPlan,
+  /** Injectable only so tests can prove runner failures stay generic. */
+  runner: typeof runPsql = runPsql,
 ): Promise<ExecutionOutcome> {
   if (!isIssuedQueryPlan(plan)) return failed("UNTRUSTED_PLAN");
   let config;
@@ -104,10 +106,17 @@ export async function executeBoundedQuery(
   plan.values.forEach(
     (value, index) => (variables[`p${index + 1}`] = String(value)),
   );
-  const run = await runPsql(config, script, {
-    variables,
-    timeoutMs: plan.timeoutMs + 10_000,
-  });
+  let run: PsqlRun;
+  try {
+    run = await runner(config, script, {
+      variables,
+      timeoutMs: plan.timeoutMs + 10_000,
+    });
+  } catch {
+    // Spawn/runner errors can embed env values (including the password):
+    // never propagate or inspect their messages.
+    return failed("QUERY_FAILED");
+  }
   if (run.timedOut) return failed("QUERY_TIMEOUT");
   if (run.exitCode !== 0) return failed(failureFor(run.sqlstate, run.exitCode));
 

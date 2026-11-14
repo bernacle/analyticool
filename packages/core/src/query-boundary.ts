@@ -278,6 +278,8 @@ export const syntheticTenancyAllowlist = defineDatasetAllowlist({
 });
 
 const requestName = z.string().min(1).max(64);
+// eslint-disable-next-line no-control-regex -- matching control characters is the point
+const CONTROL_CHARS = /[\u0000-\u001f\u007f]/;
 const filterValue = z.union([
   z.string().max(256),
   z.number().int().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
@@ -391,6 +393,13 @@ export function planBoundedQuery(
           : typeof value !== "string"
       )
         reject("INVALID_FILTER_VALUE");
+      // Empty strings and control characters (NUL, CR, LF, …) are not valid
+      // identifiers or statuses in any allowlisted dataset; reject explicitly.
+      if (
+        typeof value === "string" &&
+        (value.length === 0 || CONTROL_CHARS.test(value))
+      )
+        reject("INVALID_FILTER_VALUE");
       return value;
     };
     const column = quote(target.column);
@@ -458,13 +467,20 @@ export function evaluateRowCap<T>(
 // Connection settings
 // ---------------------------------------------------------------------------
 
+/** No NUL or other control characters: they cannot reach env/argv safely. */
+const noControl = (max: number) =>
+  z
+    .string()
+    .min(1)
+    .max(max)
+    .refine((value) => !CONTROL_CHARS.test(value));
 export const connectionConfigSchema = z.strictObject({
   mode: z.enum(["production", "local-test"]),
-  host: z.string().min(1).max(253),
+  host: noControl(253),
   port: z.number().int().min(1).max(65_535),
-  database: z.string().min(1).max(63),
-  user: z.string().min(1).max(63),
-  password: z.string().min(1).max(1_024),
+  database: noControl(63),
+  user: noControl(63),
+  password: noControl(1_024),
   sslmode: z.enum([
     "disable",
     "allow",
@@ -473,11 +489,24 @@ export const connectionConfigSchema = z.strictObject({
     "verify-ca",
     "verify-full",
   ]),
-  sslrootcert: z.string().min(1).max(4_096).optional(),
+  sslrootcert: noControl(4_096).optional(),
 });
 export type ConnectionConfig = Readonly<z.infer<typeof connectionConfigSchema>>;
 
 const loopbackHosts = new Set(["localhost", "127.0.0.1", "::1"]);
+const dnsName =
+  /^(?=.{1,253}$)[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+const ipv4 =
+  /^(?:(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)$/;
+const ipv6 = /^[0-9a-f]{0,4}(?::[0-9a-f]{0,4}){2,7}$/i;
+/**
+ * libpq treats a host starting with "/" or "@" as a Unix-domain socket (where
+ * sslmode is ignored) and a comma-separated value as several hosts. Only one
+ * TCP DNS name or IP literal is accepted, so TLS settings always apply.
+ */
+function isSingleTcpHost(host: string): boolean {
+  return dnsName.test(host) || ipv4.test(host) || ipv6.test(host);
+}
 /** Roles that are superusers, cluster admins or table owners on common hosts. */
 const privilegedRoles = new Set([
   "postgres",
@@ -512,6 +541,7 @@ export function validateConnectionConfig(input: unknown): ConnectionConfig {
     user.endsWith("_admin")
   )
     reject("PRIVILEGED_ROLE");
+  if (!isSingleTcpHost(config.host)) reject("INSECURE_CONNECTION");
   if (config.mode === "production" && config.sslmode !== "verify-full")
     reject("INSECURE_CONNECTION");
   if (
