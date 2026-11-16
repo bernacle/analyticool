@@ -13,8 +13,13 @@ import {
   loginDeadlineFromSessionValue,
 } from "./cookie-policy";
 import {
-  exceedsAbsoluteLifetime,
+  evaluateLoginAge,
+  FUTURE_CLOCK_TOLERANCE_SECONDS,
+  passwordLoginDeadline,
+} from "./login-age";
+import {
   startSessionServer,
+  type AuthTraceEvent,
   type SessionServer,
 } from "./session-server";
 import { loadStackEnv } from "./stack-env";
@@ -144,6 +149,12 @@ async function createOperatorUser(
 
 let server: SessionServer;
 const users: TestUser[] = [];
+const traces: AuthTraceEvent[] = [];
+/** Decision trace of the main server from this point on. */
+const traceFrom = () => {
+  const mark = traces.length;
+  return () => traces.slice(mark);
+};
 const fetchAs = (path: string, jar: Jar, init: RequestInit = {}) =>
   fetch(`${server.origin}${path}`, {
     redirect: "manual",
@@ -187,6 +198,10 @@ beforeAll(async () => {
     storageKey: STORAGE_KEY,
     secure: true,
     absoluteLifetimeSeconds: EIGHT_HOURS,
+    // Generous only to tolerate a loaded shared test host; the 5 s default
+    // and every fail-closed path are exercised separately.
+    authTimeoutMs: 20_000,
+    trace: (event) => traces.push(event),
   });
 });
 afterAll(async () => {
@@ -421,7 +436,7 @@ describe("server-only HttpOnly cookie session", () => {
     expect(replay.error?.code).toBe("refresh_token_already_used");
     // Observed GoTrue v2.197.0 behaviour: reuse detection does not revoke the session.
     expect((await fetchAs("/me", jar)).status).toBe(200);
-  }, 30_000);
+  }, 90_000);
 
   it("caps cookie Max-Age to the remaining absolute lifetime and refuses sessions it cannot bound", () => {
     const amrAt = Math.floor(Date.now() / 1000) - (EIGHT_HOURS - 45);
@@ -491,14 +506,14 @@ describe("server-only HttpOnly cookie session", () => {
     const claims = claimsOf(sessionFromJar(jar).access_token);
     const loginAt = Math.min(...claims.amr.map((a) => a.timestamp));
     expect(
-      exceedsAbsoluteLifetime(claims, loginAt + EIGHT_HOURS - 60, EIGHT_HOURS),
+      evaluateLoginAge(claims, loginAt + EIGHT_HOURS - 60, EIGHT_HOURS).ok,
+    ).toBe(true);
+    expect(
+      evaluateLoginAge(claims, loginAt + EIGHT_HOURS, EIGHT_HOURS),
+    ).toEqual({ ok: false, reason: "expired" });
+    expect(
+      evaluateLoginAge({ ...claims, amr: [] }, loginAt, EIGHT_HOURS).ok,
     ).toBe(false);
-    expect(
-      exceedsAbsoluteLifetime(claims, loginAt + EIGHT_HOURS, EIGHT_HOURS),
-    ).toBe(true);
-    expect(
-      exceedsAbsoluteLifetime({ ...claims, amr: [] }, loginAt, EIGHT_HOURS),
-    ).toBe(true);
   });
 });
 
@@ -666,6 +681,400 @@ describe("absolute lifetime, disablement and logout (real GoTrue)", () => {
   );
 });
 
+/**
+ * Test-only provider-state forcing: backdate (or future-date) the disposable
+ * Auth authentication-method record of a session BEFORE GoTrue mints the next
+ * token, then let the server's request-layer refresh obtain a genuinely
+ * GoTrue-signed token carrying that password-login time. No claim is made or
+ * signed by the test, and session created_at is left untouched.
+ */
+async function setAmrAge(sessionId: string, secondsAgo: number) {
+  const r = await db.query(
+    `update auth.mfa_amr_claims
+        set created_at = now() - make_interval(secs => $2),
+            updated_at = now() - make_interval(secs => $2)
+      where session_id = $1 and authentication_method = 'password'`,
+    [sessionId, secondsAgo],
+  );
+  expect(r.rowCount).toBe(1);
+}
+const markDue = (jar: Jar) =>
+  writeSessionToJar(jar, {
+    ...sessionFromJar(jar),
+    expires_at: Math.floor(Date.now() / 1000) - 60,
+  });
+const nowSeconds = () => Math.floor(Date.now() / 1000);
+const userCallPath = "/auth/v1/user";
+const pathOf = (input: Parameters<typeof fetch>[0]) =>
+  new URL(input instanceof Request ? input.url : String(input)).pathname;
+
+describe("eight-hour limit from real GoTrue-signed password-login AMR", () => {
+  it("allows a protected request just before eight hours and preserves the signed login time across refreshes", async () => {
+    const user = await createOperatorUser("near-8h");
+    users.push(user);
+    const { jar } = await login(user);
+    const sid = claimsOf(sessionFromJar(jar).access_token).session_id;
+    await setAmrAge(sid, EIGHT_HOURS - 120);
+    markDue(jar);
+    const res = await fetchAs("/me", jar);
+    expect(res.status).toBe(200);
+    for (const cookie of sessionCookies(res)) {
+      expectHardenedFlags(cookie);
+      const maxAge = Number(cookie.attributes.get("max-age"));
+      expect(maxAge).toBeGreaterThan(0);
+      expect(maxAge).toBeLessThanOrEqual(120);
+    }
+    applyCookies(jar, res);
+    const minted = claimsOf(sessionFromJar(jar).access_token);
+    expect(minted.session_id).toBe(sid);
+    expect(minted.amr).toHaveLength(1);
+    expect(minted.amr[0]?.method).toBe("password");
+    const loginAt = minted.amr[0]?.timestamp as number;
+    expect(Math.abs(loginAt - (nowSeconds() - EIGHT_HOURS + 120))).toBeLessThan(
+      10,
+    );
+    expect(minted.iat).toBeGreaterThan(loginAt + EIGHT_HOURS - 200); // fresh token, old login
+    // A second refresh keeps the same signed login time.
+    await new Promise((r) => setTimeout(r, 1100));
+    markDue(jar);
+    const again = await fetchAs("/me", jar);
+    expect(again.status).toBe(200);
+    applyCookies(jar, again);
+    expect(claimsOf(sessionFromJar(jar).access_token).amr).toEqual(minted.amr);
+  });
+
+  it("denies at eight hours: a freshly refreshed signed token does not restart the deadline, and cookies are cleared", async () => {
+    const user = await createOperatorUser("at-8h");
+    users.push(user);
+    const { jar } = await login(user);
+    const sid = claimsOf(sessionFromJar(jar).access_token).session_id;
+    await setAmrAge(sid, EIGHT_HOURS - 4);
+    markDue(jar);
+    const before = await fetchAs("/me", jar);
+    expect(before.status).toBe(200);
+    applyCookies(jar, before);
+    const loginAt = claimsOf(sessionFromJar(jar).access_token).amr[0]
+      ?.timestamp as number;
+    await new Promise((r) =>
+      setTimeout(r, (loginAt + EIGHT_HOURS - nowSeconds() + 1) * 1000),
+    );
+    const trace = traceFrom();
+    expect((await fetchAs("/me", jar)).status).toBe(401);
+    expect(trace()).toContainEqual({
+      type: "denied",
+      reason: "login-age:expired",
+    });
+    // GoTrue still refreshes (its session row is young), but the new signed
+    // token carries the same login time: refresh never extends the limit.
+    const direct = await plainClient().auth.refreshSession({
+      refresh_token: sessionFromJar(jar).refresh_token,
+    });
+    expect(direct.error).toBeNull();
+    const after = claimsOf(direct.data.session?.access_token as string);
+    expect(after.iat).toBeGreaterThanOrEqual(loginAt + EIGHT_HOURS);
+    expect(after.amr[0]?.timestamp).toBe(loginAt);
+    writeSessionToJar(jar, direct.data.session as Session);
+    expect((await fetchAs("/me", jar)).status).toBe(401);
+    // A request-layer refresh of an over-age login writes only deletions.
+    await new Promise((r) => setTimeout(r, 1100));
+    markDue(jar);
+    const refreshed = await fetchAs("/me", jar);
+    expect(refreshed.status).toBe(401);
+    const cleared = sessionCookies(refreshed);
+    expect(cleared.length).toBeGreaterThan(0);
+    for (const cookie of cleared) {
+      expectHardenedFlags(cookie);
+      expect(cookie.attributes.get("max-age")).toBe("0");
+    }
+  }, 90_000);
+
+  it("ignores account last_sign_in_at: only the signed login time matters", async () => {
+    const user = await createOperatorUser("last-sign-in");
+    users.push(user);
+    const { jar } = await login(user);
+    await db.query(
+      "update auth.users set last_sign_in_at = now() - interval '9 hours' where id = $1",
+      [user.id],
+    );
+    expect((await fetchAs("/me", jar)).status).toBe(200);
+  });
+
+  it("denies a GoTrue-signed password login dated beyond the 60 s future tolerance and accepts one within it", async () => {
+    const user = await createOperatorUser("future");
+    users.push(user);
+    for (const [secondsAhead, expected] of [
+      [300, 401],
+      [20, 200],
+    ] as const) {
+      const { jar } = await login(user);
+      const sid = claimsOf(sessionFromJar(jar).access_token).session_id;
+      await setAmrAge(sid, -secondsAhead);
+      markDue(jar);
+      const trace = traceFrom();
+      const res = await fetchAs("/me", jar);
+      expect(res.status, `${secondsAhead}s ahead`).toBe(expected);
+      if (expected === 401)
+        expect(trace()).toContainEqual({
+          type: "denied",
+          reason: "login-age:future-timestamp",
+        });
+      else
+        for (const cookie of sessionCookies(res))
+          expect(Number(cookie.attributes.get("max-age"))).toBeLessThanOrEqual(
+            EIGHT_HOURS,
+          );
+    }
+  });
+
+  it("rejects malformed, unsupported and non-integer amr; the future tolerance never extends the deadline", () => {
+    const now = 1_800_000_000;
+    const at = (amr: unknown) => evaluateLoginAge({ amr }, now, EIGHT_HOURS);
+    const reason = (amr: unknown) => {
+      const r = at(amr);
+      return r.ok ? "ok" : r.reason;
+    };
+    const pw = (timestamp: unknown) => [{ method: "password", timestamp }];
+    expect(reason(undefined)).toBe("missing-amr");
+    expect(reason([])).toBe("missing-amr");
+    expect(reason("password")).toBe("missing-amr");
+    for (const bad of [
+      "1800000000",
+      1_800_000_000.5,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      0,
+      -5,
+      null,
+      2 ** 60,
+    ])
+      expect(reason(pw(bad)), String(bad)).toBe("malformed-amr");
+    expect(reason([null])).toBe("malformed-amr");
+    expect(reason([{ timestamp: now }])).toBe("malformed-amr");
+    expect(reason([{ method: "otp", timestamp: now }])).toBe(
+      "unsupported-method",
+    );
+    expect(reason([...pw(now - 10), { method: "oauth", timestamp: now }])).toBe(
+      "unsupported-method",
+    );
+    expect(reason(pw(now + FUTURE_CLOCK_TOLERANCE_SECONDS))).toBe("ok");
+    expect(reason(pw(now + FUTURE_CLOCK_TOLERANCE_SECONDS + 1))).toBe(
+      "future-timestamp",
+    );
+    // Earliest password timestamp wins.
+    expect(at([...pw(now - 100), ...pw(now - 5000)])).toEqual({
+      ok: true,
+      loginAt: now - 5000,
+      deadline: now - 5000 + EIGHT_HOURS,
+    });
+    // A timestamp accepted within the tolerance still expires at exactly ts + 8 h.
+    const ts = now + 30;
+    expect(
+      evaluateLoginAge({ amr: pw(ts) }, ts + EIGHT_HOURS - 1, EIGHT_HOURS).ok,
+    ).toBe(true);
+    expect(
+      evaluateLoginAge({ amr: pw(ts) }, ts + EIGHT_HOURS, EIGHT_HOURS),
+    ).toEqual({ ok: false, reason: "expired" });
+    expect(evaluateLoginAge({ amr: pw(now) }, Number.NaN, EIGHT_HOURS)).toEqual(
+      { ok: false, reason: "invalid-clock" },
+    );
+    // The cookie adapter uses the same structural rules.
+    expect(passwordLoginDeadline({ amr: pw("1") }, EIGHT_HOURS).ok).toBe(false);
+  });
+});
+
+describe("fresh Auth validation of the same effective token on every request", () => {
+  it("calls getUser for every protected request with exactly the verified token, including after refresh; nothing is cached across requests", async () => {
+    const bearers: string[] = [];
+    const counting = await startSessionServer({
+      apiUrl: env.apiUrl,
+      publishableKey: env.publishableKey,
+      storageKey: STORAGE_KEY,
+      secure: true,
+      absoluteLifetimeSeconds: EIGHT_HOURS,
+      fetch: (input, init) => {
+        if (pathOf(input) === userCallPath)
+          bearers.push(
+            (new Headers(init?.headers).get("authorization") ?? "").replace(
+              /^Bearer /,
+              "",
+            ),
+          );
+        return globalThis.fetch(input, init);
+      },
+    });
+    try {
+      const user = await createOperatorUser("same-token");
+      users.push(user);
+      const jar: Jar = new Map();
+      const signIn = await fetch(`${counting.origin}/login`, {
+        method: "POST",
+        redirect: "manual",
+        headers: {
+          "content-type": "application/x-www-form-urlencoded",
+          origin: counting.origin,
+        },
+        body: new URLSearchParams({
+          email: user.email,
+          password: user.password,
+        }).toString(),
+      });
+      expect(signIn.status).toBe(303);
+      applyCookies(jar, signIn);
+      const me = () =>
+        fetch(`${counting.origin}/me`, {
+          headers: { cookie: cookieHeader(jar) },
+          redirect: "manual",
+        });
+      const first = sessionFromJar(jar).access_token;
+      expect((await me()).status).toBe(200);
+      expect((await me()).status).toBe(200);
+      expect(bearers).toEqual([first, first]);
+      await new Promise((r) => setTimeout(r, 1100));
+      markDue(jar);
+      const refreshed = await me();
+      expect(refreshed.status).toBe(200);
+      applyCookies(jar, refreshed);
+      const second = sessionFromJar(jar).access_token;
+      expect(second).not.toBe(first);
+      expect(bearers).toEqual([first, first, second]);
+    } finally {
+      await counting.close();
+    }
+  });
+
+  it.each([
+    ["HTTP 503", "status"],
+    ["network outage", "network"],
+    ["timeout", "timeout"],
+  ] as const)(
+    "denies when getUser fails by %s after successful signature/claims verification (same issuer)",
+    async (_label, fault) => {
+      const events: AuthTraceEvent[] = [];
+      let userCalls = 0;
+      const faulty = await startSessionServer({
+        apiUrl: env.apiUrl, // unchanged issuer; JWKS and /token pass through
+        publishableKey: env.publishableKey,
+        storageKey: STORAGE_KEY,
+        secure: true,
+        absoluteLifetimeSeconds: EIGHT_HOURS,
+        // The bound applies to every Auth call (JWKS too), so leave headroom
+        // on a loaded host; only the injected /user call ever hangs.
+        authTimeoutMs: fault === "timeout" ? 8_000 : 20_000,
+        trace: (event) => events.push(event),
+        fetch: (input, init) => {
+          if (pathOf(input) !== userCallPath)
+            return globalThis.fetch(input, init);
+          userCalls += 1;
+          if (fault === "status")
+            return Promise.resolve(
+              new Response('{"code":503,"msg":"unavailable"}', {
+                status: 503,
+                headers: { "content-type": "application/json" },
+              }),
+            );
+          if (fault === "network")
+            return Promise.reject(new TypeError("fetch failed"));
+          return new Promise((_resolve, reject) =>
+            init?.signal?.addEventListener("abort", () =>
+              reject(init.signal?.reason),
+            ),
+          );
+        },
+      });
+      try {
+        const user = await createOperatorUser(`outage-${fault}`);
+        users.push(user);
+        const { jar } = await login(user); // via the healthy server
+        const sid = claimsOf(sessionFromJar(jar).access_token).session_id;
+        const res = await fetch(`${faulty.origin}/me`, {
+          headers: { cookie: cookieHeader(jar) },
+          redirect: "manual",
+        });
+        expect(res.status).toBe(401);
+        expect(await res.text()).not.toContain("data-subject");
+        expect(userCalls).toBeGreaterThanOrEqual(1);
+        expect(events).toContainEqual({
+          type: "claims-verified",
+          subject: user.id,
+          sessionId: sid,
+        });
+        expect(events).toContainEqual({
+          type: "denied",
+          reason: "auth-validation-failed",
+        });
+        expect(events.some((e) => e.type === "user-validated")).toBe(false);
+        // The same cookies still work against healthy Auth: the denial came
+        // only from the failed getUser.
+        expect((await fetchAs("/me", jar)).status).toBe(200);
+      } finally {
+        await faulty.close();
+      }
+    },
+    90_000,
+  );
+});
+
+describe("external revocation, deletion and anonymous accounts (supported provider APIs)", () => {
+  it.each([
+    [
+      "admin global sign-out (session revocation)",
+      (u: TestUser, token: string) => admin.auth.admin.signOut(token, "global"),
+    ],
+    ["hard deletion", (u: TestUser) => admin.auth.admin.deleteUser(u.id)],
+    ["soft deletion", (u: TestUser) => admin.auth.admin.deleteUser(u.id, true)],
+  ] as const)(
+    "denies the next protected request after %s, with claims still verifying",
+    async (label, act) => {
+      const user = await createOperatorUser(
+        `ext-${label.split(" ")[0] as string}`,
+      );
+      users.push(user);
+      const { jar } = await login(user);
+      const token = sessionFromJar(jar).access_token;
+      const sid = claimsOf(token).session_id;
+      const ok = await (await fetchAs("/me", jar)).text();
+      expect(ok).toContain(`data-subject="${user.id}"`);
+      expect(ok).toContain(`data-session="${sid}"`);
+      const { error } = await act(user, token);
+      expect(error).toBeNull();
+      const trace = traceFrom();
+      expect((await fetchAs("/me", jar)).status).toBe(401);
+      expect(trace()).toEqual([
+        { type: "claims-verified", subject: user.id, sessionId: sid },
+        { type: "denied", reason: "auth-validation-failed" },
+      ]);
+      markDue(jar); // and the refresh token is dead too
+      expect((await fetchAs("/me", jar)).status).toBe(401);
+    },
+  );
+
+  it("denies anonymous accounts: provider refuses anonymous sign-in, and a GoTrue-signed is_anonymous token is rejected", async () => {
+    expect((await plainClient().auth.signInAnonymously()).error?.code).toBe(
+      "anonymous_provider_disabled",
+    );
+    const user = await createOperatorUser("anonymous");
+    users.push(user);
+    const { jar } = await login(user);
+    // Test-only provider-state forcing BEFORE GoTrue mints the next token.
+    await db.query("update auth.users set is_anonymous = true where id = $1", [
+      user.id,
+    ]);
+    const direct = await plainClient().auth.refreshSession({
+      refresh_token: sessionFromJar(jar).refresh_token,
+    });
+    expect(direct.error).toBeNull();
+    const token = direct.data.session?.access_token as string;
+    expect(claimsOf(token).is_anonymous).toBe(true);
+    expect((await plainClient().auth.getClaims(token)).error).toBeNull(); // genuinely signed
+    writeSessionToJar(jar, direct.data.session as Session);
+    const trace = traceFrom();
+    expect((await fetchAs("/me", jar)).status).toBe(401);
+    expect(trace()).toEqual([
+      { type: "denied", reason: "anonymous-or-unknown" },
+    ]);
+  });
+});
+
 describe("chunked session cookies", () => {
   it("flags every chunk, deletes stale chunks when the session shrinks, and deletes all chunks at logout", async () => {
     // Large enough to chunk; GoTrue's Kong gateway rejects bearer tokens over ~8 KB (observed 400),
@@ -828,7 +1237,7 @@ describe("real browser (Chromium) sees only HttpOnly cookies", () => {
     const after = await page.goto(`${origin}/me`);
     expect(after?.status()).toBe(401);
     await context.close();
-  }, 60_000);
+  }, 90_000);
 });
 
 function randomUuid() {

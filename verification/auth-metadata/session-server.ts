@@ -6,6 +6,7 @@ import {
 import type { AddressInfo } from "node:net";
 import { createServerClient } from "@supabase/ssr";
 import { createCookieJar } from "./cookie-policy";
+import { evaluateLoginAge } from "./login-age";
 
 /**
  * BRU-492 preparation: a deliberately tiny server-only session flow over plain
@@ -20,6 +21,12 @@ export type SessionServerOptions = Readonly<{
   storageKey: string;
   secure: boolean;
   absoluteLifetimeSeconds: number;
+  /** Per-call bound on every Auth request the SDK makes (default 5 s). */
+  authTimeoutMs?: number;
+  /** Test-only transport fault injection; defaults to the global fetch. */
+  fetch?: typeof fetch;
+  /** Test-only decision trace; never receives tokens. */
+  trace?: (event: AuthTraceEvent) => void;
 }>;
 
 export type SessionServer = Readonly<{
@@ -30,23 +37,136 @@ export type SessionServer = Readonly<{
   close: () => Promise<void>;
 }>;
 
+export type AuthTraceEvent =
+  | Readonly<{ type: "claims-verified"; subject: string; sessionId: string }>
+  | Readonly<{ type: "user-validated"; subject: string; sessionId: string }>
+  | Readonly<{ type: "denied"; reason: string }>;
+
+export type Principal = Readonly<{
+  subject: string;
+  sessionId: string;
+  loginAt: number;
+  deadline: number;
+}>;
+
+type ServerSupabase = ReturnType<typeof createServerClient>;
+
 const SAFE_REDIRECTS = new Set(["/me", "/login"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+/** Bound every SDK Auth request; an aborted/timed-out call is an Auth failure. */
+export function boundedAuthFetch(
+  base: typeof fetch | undefined,
+  timeoutMs: number,
+): typeof fetch {
+  return (input, init) => {
+    const timeout = AbortSignal.timeout(timeoutMs);
+    const signal = init?.signal
+      ? AbortSignal.any([init.signal, timeout])
+      : timeout;
+    return (base ?? globalThis.fetch)(input, { ...init, signal });
+  };
+}
+
+/** Request-scoped server Supabase client over the hardened cookie jar. */
+export function createRequestAuth(
+  options: SessionServerOptions,
+  cookieHeader: string | undefined,
+) {
+  const jar = createCookieJar(cookieHeader, {
+    storageKey: options.storageKey,
+    secure: options.secure,
+    absoluteLifetimeSeconds: options.absoluteLifetimeSeconds,
+  });
+  const supabase = createServerClient(options.apiUrl, options.publishableKey, {
+    cookies: jar.methods,
+    cookieOptions: { name: options.storageKey },
+    global: {
+      fetch: boundedAuthFetch(options.fetch, options.authTimeoutMs ?? 5_000),
+    },
+  });
+  return {
+    jar,
+    supabase,
+    authenticate: () => authenticateRequest(supabase, options),
+  };
+}
+
 /**
- * ADR §2 absolute login lifetime, from the signed `amr` login timestamp in
- * verified claims (GoTrue preserves it across refresh). Missing/invalid → deny.
+ * Accepted ADR §2 (2026-11-16): one protected-operation authentication. Call
+ * it again for EVERY protected operation and EVERY retry; never cache its
+ * result across requests, and never call it while holding metadata locks.
+ *
+ * 1. The effective token is the one the request-layer client holds after any
+ *    SDK refresh (getSession is used only to obtain it, never as authority).
+ * 2. getClaims(token): ES256 signature + exp against the project JWKS; then
+ *    issuer, audience, role, UUID subject/session id, non-anonymous.
+ * 3. Eight-hour limit from verified password-login amr (login-age.ts).
+ * 4. A fresh getUser(token) of that SAME token: GoTrue rejects revoked/missing
+ *    sessions, banned and deleted users. Any outage/timeout/5xx denies.
+ * 5. The returned user must match the verified subject and be a
+ *    non-anonymous email/password account.
  */
-export function exceedsAbsoluteLifetime(
-  claims: Readonly<Record<string, unknown>>,
-  nowSeconds: number,
-  absoluteLifetimeSeconds: number,
-): boolean {
-  const amr = Array.isArray(claims.amr) ? claims.amr : [];
-  const stamps = amr
-    .map((entry: unknown) => (entry as { timestamp?: unknown })?.timestamp)
-    .filter((t): t is number => typeof t === "number" && t > 0);
-  if (stamps.length === 0) return true;
-  return nowSeconds >= Math.min(...stamps) + absoluteLifetimeSeconds;
+export async function authenticateRequest(
+  supabase: ServerSupabase,
+  options: Pick<
+    SessionServerOptions,
+    "apiUrl" | "absoluteLifetimeSeconds" | "trace"
+  >,
+  nowSeconds: () => number = () => Math.floor(Date.now() / 1000),
+): Promise<Principal | null> {
+  const issuer = `${options.apiUrl}/auth/v1`;
+  const deny = (reason: string) => {
+    options.trace?.({ type: "denied", reason });
+    return null;
+  };
+  try {
+    const { data: held, error: heldError } = await supabase.auth.getSession();
+    const token = held.session?.access_token;
+    if (heldError || !token) return deny("no-session");
+
+    const { data, error } = await supabase.auth.getClaims(token);
+    if (error || !data) return deny("claims-unverified");
+    const claims = data.claims as Record<string, unknown>;
+    if (
+      claims.iss !== issuer ||
+      claims.aud !== "authenticated" ||
+      claims.role !== "authenticated" ||
+      typeof claims.sub !== "string" ||
+      !UUID.test(claims.sub) ||
+      typeof claims.session_id !== "string" ||
+      !UUID.test(claims.session_id)
+    )
+      return deny("claims-mismatch");
+    if (claims.is_anonymous !== false) return deny("anonymous-or-unknown");
+    const subject = claims.sub;
+    const sessionId = claims.session_id;
+    options.trace?.({ type: "claims-verified", subject, sessionId });
+
+    const age = evaluateLoginAge(
+      claims,
+      nowSeconds(),
+      options.absoluteLifetimeSeconds,
+    );
+    if (!age.ok) return deny(`login-age:${age.reason}`);
+
+    const { data: current, error: userError } =
+      await supabase.auth.getUser(token);
+    const user = current?.user;
+    if (userError || !user) return deny("auth-validation-failed");
+    if (
+      user.id !== subject ||
+      user.is_anonymous !== false ||
+      user.aud !== "authenticated" ||
+      typeof user.email !== "string" ||
+      user.app_metadata?.provider !== "email"
+    )
+      return deny("account-mismatch");
+    options.trace?.({ type: "user-validated", subject, sessionId });
+    return { subject, sessionId, loginAt: age.loginAt, deadline: age.deadline };
+  } catch {
+    return deny("auth-error");
+  }
 }
 
 const escapeHtml = (s: string) =>
@@ -81,18 +201,9 @@ export async function startSessionServer(
 
   async function handle(req: IncomingMessage, res: ServerResponse) {
     const url = new URL(req.url ?? "/", "http://placeholder");
-    const jar = createCookieJar(req.headers.cookie, {
-      storageKey: options.storageKey,
-      secure: options.secure,
-      absoluteLifetimeSeconds: options.absoluteLifetimeSeconds,
-    });
-    const supabase = createServerClient(
-      options.apiUrl,
-      options.publishableKey,
-      {
-        cookies: jar.methods,
-        cookieOptions: { name: options.storageKey },
-      },
+    const { jar, supabase, authenticate } = createRequestAuth(
+      options,
+      req.headers.cookie,
     );
 
     const send = (status: number, html: string, location?: string) => {
@@ -110,34 +221,6 @@ export async function startSessionServer(
       res.statusCode = status;
       res.end(`<!doctype html><title>BRU-492 verification</title>${html}`);
     };
-
-    /** getClaims (signature/exp) + issuer/audience + getUser (current account). */
-    async function authenticate() {
-      const { data, error } = await supabase.auth.getClaims();
-      if (error || !data) return null;
-      const claims = data.claims as Record<string, unknown>;
-      if (
-        claims.iss !== issuer ||
-        claims.aud !== "authenticated" ||
-        claims.role !== "authenticated" ||
-        typeof claims.sub !== "string" ||
-        !UUID.test(claims.sub) ||
-        typeof claims.session_id !== "string" ||
-        !UUID.test(claims.session_id)
-      )
-        return null;
-      if (
-        exceedsAbsoluteLifetime(
-          claims,
-          Math.floor(Date.now() / 1000),
-          options.absoluteLifetimeSeconds,
-        )
-      )
-        return null;
-      const user = await supabase.auth.getUser();
-      if (user.error || user.data.user?.id !== claims.sub) return null;
-      return { subject: claims.sub, sessionId: claims.session_id };
-    }
 
     try {
       if (req.method === "GET" && url.pathname === "/login") {
@@ -190,7 +273,7 @@ export async function startSessionServer(
                 apikey: options.publishableKey,
                 authorization: `Bearer ${data.session.access_token}`,
               },
-              signal: AbortSignal.timeout(5_000),
+              signal: AbortSignal.timeout(options.authTimeoutMs ?? 5_000),
               redirect: "error",
             });
             // Pinned GoTrue acknowledges committed revocation with 204.

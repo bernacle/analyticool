@@ -37,6 +37,24 @@ const mutations = {
       (t) => !t.name.endsWith("auth-session.test.ts"),
     );
   },
+  "missing metadata RLS suite": (r) => {
+    r.testResults = r.testResults.filter(
+      (t) => !t.name.endsWith("metadata-rls.test.ts"),
+    );
+  },
+  "missing historical predicate diagnostics": (r) => {
+    r.testResults = r.testResults.filter(
+      (t) => !t.name.endsWith("auth-predicate-gate.test.ts"),
+    );
+  },
+  "metadata RLS case dropped (below file floor)": (r) => {
+    const file = r.testResults.find((t) =>
+      t.name.endsWith("metadata-rls.test.ts"),
+    );
+    file.assertionResults.pop();
+    r.numPassedTests -= 1;
+    r.numTotalTests -= 1;
+  },
   "skipped case": (r) => {
     firstAssertion(r).status = "skipped";
     r.numPassedTests -= 1;

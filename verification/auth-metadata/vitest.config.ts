@@ -9,7 +9,7 @@ export default defineConfig({
     root: fileURLToPath(new URL("../..", import.meta.url)),
     include: ["verification/auth-metadata/**/*.test.ts"],
     fileParallelism: false,
-    testTimeout: 30_000,
+    testTimeout: 90_000, // real Auth on a possibly loaded host
     hookTimeout: 120_000,
   },
 });

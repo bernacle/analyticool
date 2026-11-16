@@ -3,7 +3,15 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { loadStackEnv } from "./stack-env";
 
 /**
- * BRU-492 DESIGN GATE EVIDENCE (not a prototype of the final design).
+ * BRU-492 HISTORICAL DIAGNOSTICS OF A REJECTED DESIGN (not a prototype).
+ *
+ * The owner accepted the Auth-boundary amendment on 2026-11-16: the
+ * application/runtime/metadata-owner roles get NO managed Auth-table access and
+ * NO BYPASSRLS; fresh server getUser validation replaces this predicate (see
+ * metadata-rls.test.ts and docs/architecture/persistent-metrics-library.md).
+ * These six probes are retained, with their CI floor, only as evidence of why
+ * the original predicate was rejected and as tripwires if Supabase's managed
+ * grants change. Candidates B/C below are never an active application owner.
  *
  * ADR §2/§3 ask for a narrowly granted, read-only Auth-session predicate whose
  * SECURITY DEFINER owner is NOLOGIN/NOBYPASSRLS, without altering the managed
@@ -145,7 +153,7 @@ describe("ADR-literal predicate owner: NOLOGIN, NOBYPASSRLS, narrow grants", () 
   });
 });
 
-describe("candidate adjustments (evidence only; not adopted without an ADR decision)", () => {
+describe("rejected candidates (diagnostic only; never an active application owner)", () => {
   it("C: dedicated NOLOGIN BYPASSRLS owner with column-only grants reads the row and nothing else of it", async () => {
     await inRollback(async () => {
       await db.query("create role gate_c nologin bypassrls inherit");

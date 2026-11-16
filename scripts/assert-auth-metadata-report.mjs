@@ -15,9 +15,12 @@ import process from "node:process";
 const out = (line) => process.stdout.write(`${line}\n`);
 const err = (line) => process.stderr.write(`${line}\n`);
 
+// auth-predicate-gate: historical, REJECTED Auth-table predicate diagnostics
+// (kept as evidence, never an active application owner); its floor stays.
 export const MIN_TESTS_PER_FILE = {
-  "verification/auth-metadata/auth-session.test.ts": 26,
+  "verification/auth-metadata/auth-session.test.ts": 39,
   "verification/auth-metadata/auth-predicate-gate.test.ts": 6,
+  "verification/auth-metadata/metadata-rls.test.ts": 26,
 };
 const MIN_TOTAL = Object.values(MIN_TESTS_PER_FILE).reduce((a, b) => a + b, 0);
 

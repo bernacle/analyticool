@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   auth-metadata:
-    name: Supabase Auth session + Auth-predicate gate
+    name: Supabase Auth session + metadata RLS + historical predicate diagnostics
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:

@@ -5,6 +5,7 @@ import {
   type CookieMethodsServer,
   type CookieOptions,
 } from "@supabase/ssr";
+import { passwordLoginDeadline } from "./login-age";
 
 /**
  * BRU-492 preparation: the server-only getAll/setAll cookie adapter from ADR
@@ -63,10 +64,12 @@ function sessionValueFrom(
 
 /**
  * Absolute deadline (epoch seconds) of the login a session cookie belongs to,
- * from the `amr` authentication timestamp of its access token. This only ever
- * shortens cookie lifetime, so it reads the token without verifying it;
- * authority always comes from getClaims/getUser and the database. Returns
- * null when the value cannot be interpreted (callers then refuse to persist).
+ * from the signed password-login `amr` timestamp of its access token, using
+ * the same structural rules as the authority check (login-age.ts). This only
+ * ever shortens cookie lifetime, so it reads the token without verifying it;
+ * authority always comes from getClaims + a fresh getUser of the same token.
+ * Returns null when the value cannot be interpreted (callers then refuse to
+ * persist).
  */
 export function loginDeadlineFromSessionValue(
   value: string,
@@ -80,14 +83,11 @@ export function loginDeadlineFromSessionValue(
     if (typeof session.access_token !== "string") return null;
     const payload = session.access_token.split(".")[1];
     if (!payload) return null;
-    const claims = JSON.parse(stringFromBase64URL(payload)) as {
-      amr?: { timestamp?: unknown }[];
-    };
-    const stamps = (claims.amr ?? [])
-      .map((entry) => entry.timestamp)
-      .filter((t): t is number => typeof t === "number" && t > 0);
-    if (stamps.length === 0) return null;
-    return Math.min(...stamps) + absoluteLifetimeSeconds;
+    const login = passwordLoginDeadline(
+      JSON.parse(stringFromBase64URL(payload)) as Record<string, unknown>,
+      absoluteLifetimeSeconds,
+    );
+    return login.ok ? login.deadline : null;
   } catch {
     return null;
   }
@@ -152,7 +152,12 @@ export function createCookieJar(
     const setCookie: string[] = [];
     for (const write of writes.values()) {
       const isDeletion = write.value === "" || write.options.maxAge === 0;
-      const cap = remaining ?? policy.absoluteLifetimeSeconds;
+      // Never longer than the absolute lifetime, even for a (future-dated)
+      // timestamp the authority check would reject anyway.
+      const cap = Math.min(
+        remaining ?? policy.absoluteLifetimeSeconds,
+        policy.absoluteLifetimeSeconds,
+      );
       const maxAge = isDeletion
         ? 0
         : Math.min(write.options.maxAge ?? policy.absoluteLifetimeSeconds, cap);
