@@ -1,0 +1,69 @@
+name: Auth and metadata verification
+
+# BRU-492 preparation: runs the real local Supabase Auth + PostgreSQL suite
+# (verification/auth-metadata) against a disposable stack started by the pinned
+# Supabase CLI, then fails closed unless every expected case ran and passed.
+# Separate from ci.yml and postgres-isolation.yml, which stay unchanged.
+# Synthetic users only; the stack's keys are the CLI's public local defaults
+# and exist only for the life of this job.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-metadata-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  auth-metadata:
+    name: Supabase Auth session + Auth-predicate gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SUPABASE_CLI_VERSION: "3.1.0"
+      SUPABASE_CLI_SHA256: dbe9fd66771337fc198727da86b9d3551302f87a7091cd8781be2a4cd0c8ac4d
+      SUPABASE_BIN: ${{ github.workspace }}/.tools/supabase
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install pinned Supabase CLI (checksum verified)
+        run: |
+          set -euo pipefail
+          mkdir -p .tools
+          curl -fsSL -o "$RUNNER_TEMP/supabase.tgz" \
+            "https://github.com/supabase/cli/releases/download/v${SUPABASE_CLI_VERSION}/supabase_${SUPABASE_CLI_VERSION}_linux_amd64.tar.gz"
+          echo "${SUPABASE_CLI_SHA256}  $RUNNER_TEMP/supabase.tgz" | sha256sum -c -
+          tar -xzf "$RUNNER_TEMP/supabase.tgz" -C .tools supabase
+          "$SUPABASE_BIN" --version
+      - name: Start disposable stack (pinned image digests, loopback only)
+        run: |
+          bash verification/auth-metadata/stack.sh prefetch
+          bash verification/auth-metadata/stack.sh start
+          grep -v '^#' "$HOME/.local/state/analyticool-bru492/stack.env" >> "$GITHUB_ENV"
+      - name: Install Chromium for the browser cookie check
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run the real Auth + metadata suite
+        run: >-
+          pnpm exec vitest run
+          --config verification/auth-metadata/vitest.config.ts
+          --reporter=default --reporter=json
+          --outputFile.json="$RUNNER_TEMP/auth-metadata-report.json"
+      - name: Fail if the suite is missing, skipped or incomplete
+        if: ${{ !cancelled() }}
+        run: node scripts/assert-auth-metadata-report.mjs "$RUNNER_TEMP/auth-metadata-report.json"
+      - name: Prove the gate rejects missing, skipped and unconfigured evidence
+        if: ${{ !cancelled() }}
+        run: node scripts/check-auth-metadata-gate.mjs "$RUNNER_TEMP/auth-metadata-report.json"
+      - name: Stop stack
+        if: ${{ always() }}
+        run: bash verification/auth-metadata/stack.sh stop
