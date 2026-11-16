@@ -64,6 +64,14 @@ jobs:
       - name: Prove the gate rejects missing, skipped and unconfigured evidence
         if: ${{ !cancelled() }}
         run: node scripts/check-auth-metadata-gate.mjs "$RUNNER_TEMP/auth-metadata-report.json"
+      - name: Retain the integration report for review
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: auth-metadata-report
+          path: ${{ runner.temp }}/auth-metadata-report.json
+          if-no-files-found: error
+          retention-days: 14
       - name: Stop stack
         if: ${{ always() }}
         run: bash verification/auth-metadata/stack.sh stop

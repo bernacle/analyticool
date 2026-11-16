@@ -16,7 +16,7 @@ const out = (line) => process.stdout.write(`${line}\n`);
 const err = (line) => process.stderr.write(`${line}\n`);
 
 export const MIN_TESTS_PER_FILE = {
-  "verification/auth-metadata/auth-session.test.ts": 22,
+  "verification/auth-metadata/auth-session.test.ts": 26,
   "verification/auth-metadata/auth-predicate-gate.test.ts": 6,
 };
 const MIN_TOTAL = Object.values(MIN_TESTS_PER_FILE).reduce((a, b) => a + b, 0);

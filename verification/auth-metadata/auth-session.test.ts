@@ -534,8 +534,9 @@ describe("absolute lifetime, disablement and logout (real GoTrue)", () => {
   });
 
   it("records the residual: GoTrue /user still accepts an unexpired access token after the timebox", async () => {
-    // Evidence for the ADR's database-time session-age check (design gate, see report):
-    // without it, a token issued just before the 8-hour limit is usable for up to 15 minutes.
+    // This changes only database created_at, not the fresh signed amr login
+    // time. It proves /user does not enforce that database timebox itself;
+    // it does NOT show the application's signed-amr lifetime check failing.
     const user = await createOperatorUser("residual");
     users.push(user);
     const { data } = await plainClient().auth.signInWithPassword(user);
@@ -596,6 +597,73 @@ describe("absolute lifetime, disablement and logout (real GoTrue)", () => {
       ).error?.code,
     ).toBe("refresh_token_not_found");
   });
+
+  it("reports banned-user logout as unconfirmed even though auth-js would suppress its rejection", async () => {
+    const user = await createOperatorUser("banned-logout");
+    users.push(user);
+    const { jar } = await login(user);
+    const captured = new Map(jar);
+    const session = sessionFromJar(jar);
+    const sid = claimsOf(session.access_token).session_id;
+    await admin.auth.admin.updateUserById(user.id, { ban_duration: "876000h" });
+    try {
+      const res = await postForm("/logout", jar, {});
+      expect(res.status).toBe(502);
+      expect(await res.text()).toContain("revocation was not confirmed");
+      expect(await sessionRow(sid)).toBeDefined();
+      const deleted = sessionCookies(res);
+      expect(deleted.map((c) => c.name).sort()).toEqual(
+        [...captured.keys()].filter((n) => n.startsWith(STORAGE_KEY)).sort(),
+      );
+      for (const cookie of deleted) {
+        expectHardenedFlags(cookie);
+        expect(cookie.attributes.get("max-age")).toBe("0");
+      }
+    } finally {
+      await admin.auth.admin.updateUserById(user.id, { ban_duration: "none" });
+    }
+    // The remote session actually survived. Clearing the browser cannot be
+    // presented as revoking a captured token: this is precisely the defect.
+    expect((await fetchAs("/me", captured)).status).toBe(200);
+    expect(
+      (
+        await plainClient().auth.refreshSession({
+          refresh_token: session.refresh_token,
+        })
+      ).error,
+    ).toBeNull();
+  });
+
+  it.each([401, 403, 404])(
+    "does not treat a rejected logout HTTP %i as confirmed revocation",
+    async (status) => {
+      const user = await createOperatorUser(`logout-${status}`);
+      users.push(user);
+      const { jar } = await login(user);
+      const sid = claimsOf(sessionFromJar(jar).access_token).session_id;
+      const originalFetch = globalThis.fetch;
+      const rejectedLogout = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation((input, init) => {
+          if (String(input) === `${ISSUER}/logout?scope=local`)
+            return Promise.resolve(new Response("{}", { status }));
+          return originalFetch(input, init);
+        });
+      try {
+        const res = await postForm("/logout", jar, {});
+        expect(res.status).toBe(502);
+        expect(await res.text()).toContain("revocation was not confirmed");
+        expect(await sessionRow(sid)).toBeDefined();
+        expect(sessionCookies(res).length).toBeGreaterThan(0);
+        for (const cookie of sessionCookies(res)) {
+          expectHardenedFlags(cookie);
+          expect(cookie.attributes.get("max-age")).toBe("0");
+        }
+      } finally {
+        rejectedLogout.mockRestore();
+      }
+    },
+  );
 });
 
 describe("chunked session cookies", () => {

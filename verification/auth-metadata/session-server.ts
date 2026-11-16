@@ -179,8 +179,25 @@ export async function startSessionServer(
           return send(403, "<p>Cross-origin request refused.</p>");
         let confirmed = false;
         try {
-          const { error } = await supabase.auth.signOut({ scope: "local" });
-          confirmed = !error;
+          // getSession is used only to obtain the bearer token, never to grant
+          // access. auth-js signOut suppresses 401/403/404 responses, so its
+          // error=null cannot establish that GoTrue revoked this session.
+          const { data, error } = await supabase.auth.getSession();
+          if (!error && data.session?.access_token) {
+            const response = await fetch(`${issuer}/logout?scope=local`, {
+              method: "POST",
+              headers: {
+                apikey: options.publishableKey,
+                authorization: `Bearer ${data.session.access_token}`,
+              },
+              signal: AbortSignal.timeout(5_000),
+              redirect: "error",
+            });
+            // Pinned GoTrue acknowledges committed revocation with 204.
+            // Rejections and ambiguous outcomes remain unconfirmed.
+            confirmed = response.status === 204;
+            await response.body?.cancel();
+          }
         } catch {
           confirmed = false;
         }

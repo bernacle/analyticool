@@ -6,7 +6,7 @@ Status: **Preparation partly complete, stopped at a design gate.** Date 2026-11-
 | -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | 1. Dependency pins, lockfile, evidence regen | Done (§1)                                                                                                                                   |
 | 2. Disposable local Supabase Auth + Postgres | Done (§2)                                                                                                                                   |
-| 3. Server-only HttpOnly cookie integration   | **Passed**: 22/22 against real GoTrue (§3)                                                                                                  |
+| 3. Server-only HttpOnly cookie integration   | **Passed after review fixes**: 26/26 against real GoTrue (§3)                                                                               |
 | 4. Runtime role / FORCE RLS / definer probe  | **Blocked at the design gate**: the Auth-session predicate cannot be built as written (§4). The dependent metadata RLS probe was not built. |
 | 5. Separate fail-closed CI workflow          | Done for the suites that exist (§5). Floors rise when the item 4 probe lands.                                                               |
 | 6. Operator check/setup patch                | Prepared, not applied (§6). A **pre-existing sandbox hole** was found: checks can reach the Docker socket.                                  |
@@ -63,7 +63,7 @@ Artifacts in `verification/auth-metadata/`:
 
 The adapter buffers SDK writes and re-issues **every write and deletion of every chunk** as `HttpOnly; Secure; SameSite=Lax; Path=/`, with no Domain and no Expires. Max-Age is capped at the remaining 8 h from the signed `amr` login time. A session it cannot bound is written as a deletion. A write after the response is committed is a detected violation. `encode: "tokens-only"` keeps the user object out of cookies. The SDK's own defaults would be `httpOnly: false` with a 400-day Max-Age. `authenticate()` runs `getClaims()` (ES256 signature and exp), checks issuer, audience, role and UUID sub/session_id, checks the 8 h limit from the signed `amr` time, then runs `getUser()` to confirm the current account.
 
-**22/22 passed.** These cases cover:
+**Original head `2aedaee`: 22/22 passed; review fixes raise this to 26/26.** These cases cover:
 
 - disabled signup
 - 900 s ES256 tokens with iss/aud/sub/session_id that match the `auth.sessions` row
@@ -80,7 +80,7 @@ The adapter buffers SDK writes and re-issues **every write and deletion of every
 - the 8 h limit despite refresh
 - timebox refresh denial with chunk deletion
 - banned account denied
-- logout revokes the `auth.sessions` row, deletes every chunk, and defeats replay of both tokens
+- acknowledged logout revokes the `auth.sessions` row, deletes every chunk, and defeats replay of both tokens; rejected logout clears cookies but reports remote revocation unconfirmed (see review correction below)
 - chunked sessions: all chunks flagged, stale chunks deleted on shrink, all deleted at logout
 - Auth unavailable: denied, never a fallback; logout clears cookies and reports that revocation was not confirmed
 - **real Chromium**: form login, all cookies HttpOnly/Secure/Lax/host-only, `document.cookie === ""`, no token in HTML or storage, logout clears everything
@@ -98,7 +98,7 @@ Server-side expiry of a genuinely expired token at GoTrue is not exercised, beca
 Observed GoTrue v2.197.0 behaviour that PR 1 must design around:
 
 - **Reuse detection does not revoke the session.** Replaying a superseded refresh token after 10 s returns `refresh_token_already_used`, but the legitimate chain keeps working. Replaying the parent while its child is still unused returns that child, which is GoTrue's lost-response allowance.
-- **`/user` accepts an unexpired access token after the 8 h timebox.** Only refresh is refused (`session_expired`). The server-side `amr` check closes this. The ADR's database-time session-age predicate would add defense in depth, but it is blocked (§4).
+- **`/user` does not independently enforce database session age.** Backdating database `created_at` makes refresh fail (`session_expired`) while `/user` accepts the still-valid token. Its signed AMR remains fresh, so this artificial divergence does not prove an eight-hour-old login bypasses the application limit. Refresh preservation and the helper boundary are covered separately; a real signed near-boundary protected-request test is still required (§4).
 - **`Referrer-Policy: no-referrer` breaks Origin checks.** With it, Chromium sends `Origin: null` on same-origin form POSTs, so the login was refused. Use `same-origin` or `strict-origin-when-cross-origin`. This applies equally to Next.js Server Action Origin checks.
 - **Oversized JWT claims break the gateway.** An 8.8 KB access token from large `user_metadata` makes Kong return 400 on `/logout` and `/user`. Keep user metadata small.
 
@@ -116,9 +116,9 @@ ADR §2/§3 ask for a narrowly granted, read-only predicate that checks the veri
 
 Per the preparation brief, I stopped here. The FORCE RLS, membership and SECURITY DEFINER metadata probe embeds this predicate in its policies, so it was **not built**, and the ADR was not changed to work around it.
 
-**Proposed smallest adjustment, for owner/ADR decision:** adopt **C**. The predicate gets its own NOLOGIN role with BYPASSRLS, column-only `SELECT` on `auth.sessions(id, user_id, created_at, not_after)` and `auth.users(id, banned_until, deleted_at)`, `anon` membership solely for schema usage, and no other grants. It owns exactly one fixed-body `SECURITY DEFINER` function with `search_path = pg_catalog, pg_temp`, schema-qualified references and PUBLIC EXECUTE revoked. EXECUTE goes only to the runtime login and the metadata owner. All **metadata** definers keep the ADR's NOLOGIN/NOBYPASSRLS, FORCE RLS owner. The ADR wording would change from "NOLOGIN/NOBYPASSRLS owner" to "except the isolated Auth-session predicate owner, which needs BYPASSRLS because Supabase enables policy-less RLS on Auth tables".
+**Independent review recommendation, not adopted:** prefer fresh server `getUser()` validation of the same effective token on every protected operation/retry, together with verified signed-password-login age and current metadata membership/RLS checks. Do not grant application roles access to managed Auth tables or BYPASSRLS. The original implementer suggested candidate C, but independent review found the extra privilege unnecessary within the trusted-backend model and noted its inherited authority. Exact proposed ADR edits, remaining tests and explicit loss of the independent database-time Auth check are in [the proposed amendment](bru-492-auth-boundary-amendment.md). Owner approval is required before dependent metadata probes continue.
 
-Residual risk of C: through `anon`, the role inherits Data API grants on `public` (Supabase default privileges), with RLS bypassed. Only the fixed function body can use them, because nobody can SET ROLE to it. Option B is simpler, but its owner can read everything. A third option, relying only on GoTrue `getUser` (which already rejects revoked sessions) plus the signed `amr` 8 h check, drops the ADR's database-time check and is not recommended. Hosted Supabase ACLs are assumed to match the local image; confirm that on the real project before PR 1.
+Candidate C's residual risk: inheriting `anon` also inherits its other SQL privileges, and BYPASSRLS defeats RLS wherever those grants allow access. A fixed function body limits exposure; narrow Auth-column grants alone do not bound that inherited authority. Hosted ACLs remain unverified.
 
 ## 5. CI and fail-closed gates
 
@@ -128,12 +128,13 @@ Residual risk of C: through `anon`, the role inherits Data API grants on `public
 2. runs `stack.sh prefetch/start` with digest and loopback verification;
 3. installs Chromium;
 4. runs the suite with a JSON report;
-5. runs [`assert-auth-metadata-report.mjs`](../../scripts/assert-auth-metadata-report.mjs), which fails if a file is missing, any case is skipped, todo or failed, or a count is below the floor (`auth-session` ≥ 22, `auth-predicate-gate` ≥ 6, total ≥ 28);
-6. runs [`check-auth-metadata-gate.mjs`](../../scripts/check-auth-metadata-gate.mjs), the gate-negative proof.
+5. runs [`assert-auth-metadata-report.mjs`](../../scripts/assert-auth-metadata-report.mjs), which fails if a file is missing, any case is skipped, todo or failed, or a count is below the floor (`auth-session` ≥ 26, `auth-predicate-gate` ≥ 6, total ≥ 32);
+6. runs [`check-auth-metadata-gate.mjs`](../../scripts/check-auth-metadata-gate.mjs), the gate-negative proof;
+7. retains the JSON report as a 14-day CI artifact, including on failure (added after review).
 
 The gate-negative script must accept the real report and reject 10 degradations: missing file, skipped, todo, failed, below floor, `success:false`, unreadable report, missing report, and a real suite run with its configuration removed (which exits 1). Without configuration the suite **throws**; it never skips. `pnpm test` stays database-free.
 
-This workflow has not yet run on GitHub. It runs for the first time on this PR.
+At independently reviewed head `2aedaee`, all three GitHub checks passed: standard CI, PostgreSQL isolation, and the new Auth workflow. The review-fix commit needs its own CI result and has not received independent approval.
 
 ## 6. Operator checks (prepared, not applied)
 
@@ -141,9 +142,9 @@ Exact patch: [`bru-492-operator-config.patch`](bru-492-operator-config.patch), a
 
 Run sandboxed under the orchestrator's own generated Seatbelt profile, the check body:
 
-- passes 28/28 plus 11 gate checks with the suite present;
-- verifies only loopback reachability on a base ref without the suite;
-- **fails** when the stack is not started.
+- originally passed 28/28 plus 11 gate checks with the suite present;
+- originally fell back to health-only success on any ref without the runner, which independent review correctly rejected;
+- now requires the runner on every ref, including the baseline, and **fails** when the runner or running stack is absent. Apply this check only after preparation is merged. The revised body was tested against a candidate directory without the runner and rejected it. No baseline exception remains.
 
 Operator recipe, unsandboxed and before `orchestrator preflight` or a run:
 
@@ -156,7 +157,7 @@ bash verification/auth-metadata/stack.sh stop
 
 **Pre-existing isolation hole (orchestrator, not this repository):** the check profile contains `(allow network-outbound (remote unix-socket))`. Under a profile generated by `orchestrator/dist/core/isolation.js` (network `none`), `curl --unix-socket /var/run/docker.sock …/_ping` returns `OK`. Any check, including agent-written tests, can therefore drive the Docker daemon, which is host-level power, whether or not this stack exists.
 
-Tested fix: add `(deny network-outbound (remote unix-socket (path-literal "/var/run/docker.sock")))` and the same rule for `~/.orbstack/run/docker.sock` (or narrow the unix-socket allow). With it, the socket is unreachable (exit 7) and loopback Auth still returns 200. The full suite was also verified sandboxed. I recommend fixing this before any live run, independently of BRU-492. I made no orchestrator change.
+Original targeted experiment: deny `/var/run/docker.sock` and the OrbStack socket; those paths became unreachable while loopback Auth still worked. Independent review noted that two path denies miss aliases, alternate runtimes and the outbound setup profile. Recommended hardening is default-deny outbound Unix sockets in both setup and check profiles, with only demonstrated necessary test sockets allowed. It needs separate engine-repository authorization, generated-runtime rebuild and real sandbox regression checks before any live run. No Orchestrator change has been made.
 
 ## 7. Verification evidence
 
@@ -169,11 +170,22 @@ Node 24.21.0, pnpm 10.34.9, Docker 29.4.0 (OrbStack), macOS arm64.
 | `pnpm verify:net-receipts`; `python3 verification/net-receipts/oracle.py`                                                   | 75 cases, 7/7 variants; exit 0          |
 | `pnpm build`                                                                                                                | pass                                    |
 | BRU-461 suite (`PGBIN=/opt/homebrew/opt/postgresql@17/bin bash verification/postgres-isolation/run-local.sh`) plus its gate | **93/93**, 0 skipped (PostgreSQL 17.11) |
-| `bash verification/auth-metadata/run-checks.sh` (stack running)                                                             | 28/28 + gate OK + 11/11 gate-negative   |
-| The same suite inside the Seatbelt profile, scrubbed env                                                                    | 28/28                                   |
+| Updated `bash verification/auth-metadata/run-checks.sh` (stack running)                                                     | 32/32 + gate OK + 11/11 gate-negative   |
+| Original head suite inside Seatbelt, scrubbed env                                                                           | 28/28                                   |
 
 Reproduce: install the pinned CLI (§2), `stack.sh prefetch && stack.sh start`, then `bash verification/auth-metadata/run-checks.sh`.
 
-Limits: one local machine. The GitHub workflow has not run yet. Hosted Supabase ACLs and limits are not verified. There is no Next.js integration yet; that is PR 1. Session-row correlation at database access is still undecided (§4).
+Limits: one local machine. CI passed on original head `2aedaee`; review-fix CI is pending. Hosted Supabase ACLs and limits are not verified. There is no Next.js integration yet; that is PR 1. Session-row correlation at database access is still undecided (§4).
 
 **Gate to the next phase:** this ADR reaches `origin/main` only when a human merges this draft PR. Until then the Orchestrator's `base_branch: main` does not contain it, and no phase dry run should rely on it. The engine's base branch was not changed. PR 1 also waits on the §4 decision and on the operator patch being reviewed and applied. Usage was not tool-metered here; see the PR handback.
+
+## 8. Independent review corrections (2026-11-16)
+
+Codex requested changes on exact head `2aedaee`: P1 false confirmed logout after a rejected Auth request; P2 health-only operator fallback on candidate refs; P2 overstated timebox test comment. The missing metadata probe was an intentional gate, not a passing result.
+
+- **P1 fixed in the verification harness:** obtain the current bearer only for logout, call the pinned GoTrue `/logout?scope=local` endpoint directly with a five-second timeout and require its explicit HTTP 204 acknowledgement. Do not infer remote revocation from SDK `error: null`, which suppresses 401/403/404. Every outcome clears all cookie chunks. A real banned-account regression now returns unconfirmed logout while the remote row survives; after unban captured cookies and refresh tokens still work, accurately demonstrating the distinction. Three additional rejected HTTP status cases also remain unconfirmed. The latter are transport fault injection with real authenticated sessions, not three claims about distinct GoTrue behaviors.
+- **P2 operator fallback removed:** the unapplied config patch requires the runner for baseline and candidate refs. A deleted runner fails instead of degrading to a health check. Preparation must merge before applying this check; a base ref without the preparation suite deliberately fails.
+- **P2 timebox evidence corrected:** database backdating is not signed-AMR aging. The original ADR is not amended by correcting this claim.
+- Added CI JSON-report retention. Lint, types, formatting and the corrected 32-case integration suite plus 11 gate checks pass locally. No dependency or calculation changes in this correction.
+
+The [Auth-boundary amendment](bru-492-auth-boundary-amendment.md) remains a proposal. The current reviewed head was request-changes, not approval of the correction commit. Metadata permissions/recursion/escalation coverage, engine hardening, operator installation, baseline merge and Phase 1 dry run remain outstanding.
