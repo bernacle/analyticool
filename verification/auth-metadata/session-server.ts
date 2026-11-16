@@ -284,7 +284,7 @@ export async function startSessionServer(
         } catch {
           confirmed = false;
         }
-        // Always clear every chunk the browser holds, even if Auth was unreachable.
+        // Clear incoming and refreshed chunks, even if remote revocation failed.
         jar.deleteAllSessionCookies();
         return confirmed
           ? send(303, "", "/login")

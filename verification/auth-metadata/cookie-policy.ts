@@ -122,9 +122,13 @@ export function createCookieJar(
     },
   };
 
-  /** Explicitly delete every session chunk the browser sent (logout fallback). */
+  /** Delete incoming and SDK-buffered session cookies, including chunks created by refresh. */
   function deleteAllSessionCookies() {
-    for (const { name } of request)
+    const names = new Set([
+      ...request.map(({ name }) => name),
+      ...writes.keys(),
+    ]);
+    for (const name of names)
       if (
         isSessionCookie(policy.storageKey, name) ||
         name.startsWith(`${policy.storageKey}-`)

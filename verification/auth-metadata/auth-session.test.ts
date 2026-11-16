@@ -479,7 +479,7 @@ describe("server-only HttpOnly cookie session", () => {
       const cookie = write(unbounded);
       expectHardenedFlags(cookie);
       expect(cookie.attributes.get("max-age")).toBe("0");
-      expect(cookie.value).toBe("");
+      expect(cookie.value === "", `${cookie.name}: cleared value`).toBe(true);
     }
     expect(
       loginDeadlineFromSessionValue(
@@ -1076,6 +1076,81 @@ describe("external revocation, deletion and anonymous accounts (supported provid
 });
 
 describe("chunked session cookies", () => {
+  it.each([
+    ["grow", false],
+    ["grow", true],
+    ["shrink", false],
+    ["shrink", true],
+  ] as const)(
+    "clears incoming and refreshed cookies when chunks %s during logout (remote rejected: %s)",
+    async (shape, rejected) => {
+      const user = await createOperatorUser(
+        `logout-${shape}-${rejected}`,
+        shape === "shrink" ? { padding: "x".repeat(3000) } : {},
+      );
+      users.push(user);
+      const { jar } = await login(user);
+      const sid = claimsOf(sessionFromJar(jar).access_token).session_id;
+      const updated = await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: { padding: shape === "grow" ? "x".repeat(3000) : null },
+      });
+      expect(updated.error).toBeNull();
+      markDue(jar);
+      const incoming = new Set(jar.keys());
+      expect(incoming.has(STORAGE_KEY)).toBe(shape === "grow");
+      let refreshedToken: string | undefined;
+      const originalFetch = globalThis.fetch;
+      const remote = vi
+        .spyOn(globalThis, "fetch")
+        .mockImplementation(async (input, init) => {
+          if (rejected && String(input) === `${ISSUER}/logout?scope=local`)
+            return new Response("{}", { status: 503 });
+          const response = await originalFetch(input, init);
+          if (
+            String(input) === `${ISSUER}/token?grant_type=refresh_token` &&
+            response.ok
+          )
+            refreshedToken = (await response.clone().json()).access_token;
+          return response;
+        });
+      let out: Response;
+      try {
+        out = await postForm("/logout", jar, {});
+      } finally {
+        remote.mockRestore();
+      }
+      expect(refreshedToken).toBeTypeOf("string");
+      expect(out.status).toBe(rejected ? 502 : 303);
+      if (rejected)
+        expect(await out.text()).toContain("revocation was not confirmed");
+      const deleted = sessionCookies(out);
+      const names = new Set(deleted.map((cookie) => cookie.name));
+      // The refresh changed the shape: a newly buffered name must also be deleted.
+      expect([...names].some((name) => !incoming.has(name))).toBe(true);
+      for (const name of incoming) expect(names.has(name)).toBe(true);
+      for (const cookie of deleted) {
+        expectHardenedFlags(cookie);
+        expect(cookie.value === "", `${cookie.name}: cleared value`).toBe(true);
+        expect(cookie.attributes.get("max-age")).toBe("0");
+      }
+      applyCookies(jar, out);
+      expect(jar.size).toBe(0);
+      expect((await fetchAs("/me", jar)).status).toBe(401);
+      if (rejected) {
+        // The provider session survives, but the browser must still be signed out.
+        expect(await sessionRow(sid)).toBeDefined();
+        expect(
+          (await plainClient().auth.getUser(refreshedToken)).error,
+        ).toBeNull();
+      } else {
+        expect(await sessionRow(sid)).toBeUndefined();
+        expect(
+          (await plainClient().auth.getUser(refreshedToken)).error,
+        ).not.toBeNull();
+      }
+    },
+  );
+
   it("flags every chunk, deletes stale chunks when the session shrinks, and deletes all chunks at logout", async () => {
     // Large enough to chunk; GoTrue's Kong gateway rejects bearer tokens over ~8 KB (observed 400),
     // so oversized JWT claims would break logout/getUser: keep user metadata small.

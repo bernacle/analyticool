@@ -6,9 +6,9 @@ Status: **Preparation complete; final review pending.** Date 2026-11-16. Baselin
 | -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
 | 1. Dependency pins, lockfile, evidence regen | Done (§1); no dependency change since                                                                                |
 | 2. Disposable local Supabase Auth + Postgres | Done (§2)                                                                                                            |
-| 3. Server-only HttpOnly cookie integration   | **Passed**: 39/39 against real GoTrue (§3, §4b)                                                                      |
+| 3. Server-only HttpOnly cookie integration   | **Passed**: 43/43 against real GoTrue (§3, §4b)                                                                      |
 | 4. Runtime role / FORCE RLS / definer probe  | **Passed** under the accepted amendment: 26/26 as the actual runtime login (§4b). Original predicate rejected (§4a). |
-| 5. Separate fail-closed CI workflow          | Done; floors raised to 39 + 26 + 6 = 71, with 14 gate-negative checks (§5)                                           |
+| 5. Separate fail-closed CI workflow          | Done; floors raised to 43 + 26 + 6 = 75, with 14 gate-negative checks (§5)                                           |
 | 6. Operator check/setup patch                | Prepared, **not applied** (§6). Separate sandbox fix awaits manual merge and installed-runtime verification (§6).    |
 | 7. Baseline verification                     | All green at the final head (§7)                                                                                     |
 
@@ -124,7 +124,7 @@ Normative text: [ADR](persistent-metrics-library.md) §2, §3, §5, §6.
 
 **Auth** ([`session-server.ts`](../../verification/auth-metadata/session-server.ts) `authenticateRequest`, [`login-age.ts`](../../verification/auth-metadata/login-age.ts)): for each protected operation and retry, take the effective token after any SDK refresh. `getClaims(token)` checks the signature and exp, then issuer, audience, role, UUID sub/session_id and `is_anonymous === false`. Next comes the signed password-login AMR age check. Last, a fresh `getUser(token)` of that same token must return the same subject as a non-anonymous email account. Every SDK Auth call is time-bounded (default 5 s). Logout keeps the raw GoTrue 204-only confirmation and clears all chunks for every outcome.
 
-`auth-session.test.ts`, **39/39** against real GoTrue v2.197.0 (13 new):
+`auth-session.test.ts`, **43/43** against real GoTrue v2.197.0 (13 amendment cases plus four logout regression cases):
 
 - **Near/at eight hours with real signatures.** As a test-only admin action, the disposable `auth.mfa_amr_claims` row is backdated **before** GoTrue mints the next token. The server's request-layer refresh then obtains a genuinely GoTrue-signed token. No claim is test-made, and session `created_at` is untouched.
   - At 8 h − 120 s: allowed, with cookie Max-Age ≤ 120 s, and the signed login time is unchanged after a second refresh.
@@ -186,7 +186,7 @@ Each mutation was reverted.
 2. runs `stack.sh prefetch/start` with digest and loopback verification;
 3. installs Chromium;
 4. runs the suite with a JSON report;
-5. runs [`assert-auth-metadata-report.mjs`](../../scripts/assert-auth-metadata-report.mjs), which fails if a file is missing, any case is skipped, todo or failed, or a count is below the floor (`auth-session` ≥ 39, `metadata-rls` ≥ 26, historical `auth-predicate-gate` ≥ 6, total ≥ 71);
+5. runs [`assert-auth-metadata-report.mjs`](../../scripts/assert-auth-metadata-report.mjs), which fails if a file is missing, any case is skipped, todo or failed, or a count is below the floor (`auth-session` ≥ 43, `metadata-rls` ≥ 26, historical `auth-predicate-gate` ≥ 6, total ≥ 75);
 6. runs [`check-auth-metadata-gate.mjs`](../../scripts/check-auth-metadata-gate.mjs), the gate-negative proof;
 7. retains the JSON report as a 14-day CI artifact, including on failure (added after review).
 
@@ -237,7 +237,7 @@ Final local run, Node 24.21.0, pnpm 10.34.9, Docker 29.4.0 (OrbStack), macOS arm
 | `pnpm test` (no `ANALYTICOOL_*` variables)                                                                                  | 9 files, 246/246                                                             |
 | `pnpm verify:net-receipts`; `python3 -I verification/net-receipts/oracle.py`                                                | 75 cases, 7/7 variants, report `sha256:be52ef10…4971` unchanged; exit 0      |
 | BRU-461 suite (`PGBIN=/opt/homebrew/opt/postgresql@17/bin bash verification/postgres-isolation/run-local.sh`) plus its gate | **93/93**, 0 skipped (PostgreSQL 17.11); `ci.yml` and floor unchanged        |
-| `bash verification/auth-metadata/run-checks.sh` (stack running)                                                             | **71/71** (39 + 26 + 6) + gate OK + 14/14 gate-negative, incl. real Chromium |
+| `bash verification/auth-metadata/run-checks.sh` (stack running)                                                             | **75/75** (43 + 26 + 6) + gate OK + 14/14 gate-negative, incl. real Chromium |
 
 Reproduce: install the pinned CLI (§2), `stack.sh prefetch && stack.sh start`, then `bash verification/auth-metadata/run-checks.sh`, then `stack.sh stop`.
 
@@ -267,3 +267,11 @@ At the time of these corrections the amendment was still a proposal. It was acce
 - No dependency, lockfile, `ci.yml`, `postgres-isolation.yml`, engine, Orchestrator config or trust change. The operator patch is still unapplied.
 
 Remaining: independent review of the final head, human merge, operator patch application, Orchestrator Unix-socket hardening (separate authorization), and the Phase 1 dry run.
+
+## 10. Final review logout correction (2026-11-16)
+
+Independent Codex review of `f019ef4` found one P1: `getSession()` can refresh during logout and buffer a new cookie chunk shape. Deleting only incoming names left the new chunks live, including when remote logout returned 503. The correction clears the union of incoming and buffered session-cookie names before the response flushes, preserving hardened deletion flags and truthful remote-revocation reporting.
+
+Four real-GoTrue regressions cover growing and shrinking chunks, each with acknowledged and rejected remote logout. All four failed against the previous adapter; each requires a real successful refresh, checks deletion of both incoming and newly buffered names, applies the response to the browser jar, and requires the next protected request to return 401. Rejected logout additionally proves the remote session survives while local cookies are gone. No token values are printed by these assertions. The Auth floor rises from 39 to 43; the overall floor rises from 71 to 75, with no reductions elsewhere.
+
+The preceding independent review passed the 71-case suite and 14 report-gate checks under hardened engine source `350b313`, with scrubbed environment, private HOME and no extra read paths. It also proved Shared state read-only, Docker aliases denied in both profiles with outside positive controls, loopback connectivity, and fail-closed missing-runner/stopped-stack checks. It found no other blocking Auth/RLS/ACL/definer/membership issue. That evidence does not constitute approval of this correction: Local validation of the correction passed 75/75, the report gate and 14/14 negative checks, plus lint, formatting, typecheck and build. Disposable stack resources were removed. Exact-head independent re-review and CI remain required before manual merge.
