@@ -1,0 +1,6 @@
+# BRU-492 preparation: images started by Supabase CLI 3.1.0 for this probe
+# (db + auth + kong only). stack.sh refuses to start or hand off a stack whose
+# images do not match these manifest digests. Update only as a reviewed change.
+public.ecr.aws/supabase/postgres:17.11.0.018 sha256:7c31363a3f7434ff14945f1b8a4880e6eca8b362e197e88b87c476c77aa3cf8c
+public.ecr.aws/supabase/gotrue:v2.197.0 sha256:1736a63078f5922b198c4cbe50f80ab9a2d3b54fe8b7b6cfb2e9dc5dbbc12c6b
+public.ecr.aws/supabase/kong:2.8.1 sha256:1b53405d8680a09d6f44494b7990bf7da2ea43f84a258c59717d4539abf09f6d

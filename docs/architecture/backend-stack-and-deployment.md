@@ -4,6 +4,8 @@ Status: **Proposed** — BRU-464, 2026-11-14; owner's provisional decisions reco
 
 This ADR records the smallest backend stack those three issues need, using the existing Vercel, Supabase and Railway plans. It is a design record only: **this spike changes no code, dependencies, environment variables, deploy configuration or cloud services**, following the 2026-11-03 decision ("No infrastructure changes at bootstrap") and [CONTRIBUTING.md](../../CONTRIBUTING.md). Everything in §§2–4 is a proposed design; nothing here is implemented or deployed.
 
+**BRU-492 decision gate (2026-11-16):** the [Persistent Metrics Library contract](persistent-metrics-library.md) refines dashboard session ownership, runtime database permissions and transactional persistence. It recommends server-only Supabase-managed sessions retaining HttpOnly cookies; no second application session registry. BRU-492 owns dashboard authentication, while BRU-494 retains embed authorization. These are documented implementation recommendations awaiting review/preparation, not shipped behavior; the stack choices remain unchanged.
+
 ## 1. Current baseline (audited)
 
 Verified from this repository at the BRU-464 branch point (`50d60bb`):

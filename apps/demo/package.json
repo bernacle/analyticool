@@ -12,10 +12,16 @@
   "dependencies": {
     "@analyticool/core": "workspace:*",
     "@analyticool/react": "workspace:*",
+    "@supabase/ssr": "0.12.7",
+    "@supabase/supabase-js": "2.119.0",
     "@tailwindcss/postcss": "^4.3.4",
     "next": "16.4.5",
+    "pg": "8.23.1",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "tailwindcss": "^4.3.4"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
   }
 }

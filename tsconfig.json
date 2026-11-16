@@ -3,6 +3,7 @@
   "include": [
     "*.ts",
     "tests/**/*.ts",
-    "verification/postgres-isolation/**/*.ts"
+    "verification/postgres-isolation/**/*.ts",
+    "verification/auth-metadata/**/*.ts"
   ]
 }

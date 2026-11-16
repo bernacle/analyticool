@@ -1,0 +1,87 @@
+# BRU-492 preparation only: disposable LOCAL Supabase Auth + PostgreSQL for the
+# verification/auth-metadata suite. Not an application project, not linked to any
+# hosted Supabase project, and never deployed. Only db, auth (GoTrue) and the kong
+# gateway run; every other service is disabled here and excluded in stack.sh.
+# Every value below is a deliberate, reviewed security setting for the probe.
+project_id = "analyticool-bru492-verify"
+
+[api]
+enabled = true
+# Loopback-only gateway for /auth/v1. Non-default port avoids clashing with other
+# local Supabase projects.
+port = 55421
+# No schema is exposed through the Data API (PostgREST is not started either).
+schemas = []
+extra_search_path = []
+max_rows = 1
+
+[db]
+port = 55422
+shadow_port = 55420
+major_version = 17
+
+[db.pooler]
+enabled = false
+
+[db.migrations]
+# The verification suite applies its own probe schema; there are no app migrations.
+enabled = false
+
+[db.seed]
+enabled = false
+
+[realtime]
+enabled = false
+
+[studio]
+enabled = false
+
+[local_smtp]
+enabled = false
+
+[storage]
+enabled = false
+
+[edge_runtime]
+enabled = false
+
+[analytics]
+enabled = false
+
+[auth]
+enabled = true
+site_url = "http://127.0.0.1:3000"
+additional_redirect_urls = []
+# ADR §2: 15-minute access token.
+jwt_expiry = 900
+enable_refresh_token_rotation = true
+# Supabase default reuse window; concurrent-refresh tests depend on it.
+refresh_token_reuse_interval = 10
+# ADR §2: public signup disabled; users are created by the operator (admin API).
+enable_signup = false
+enable_anonymous_sign_ins = false
+enable_manual_linking = false
+minimum_password_length = 12
+password_requirements = "lower_upper_letters_digits"
+
+[auth.sessions]
+# ADR §2: 8-hour absolute login lifetime; refresh must not extend it.
+timebox = "8h"
+
+[auth.email]
+# Email/password sign-in for operator-created users only (signup is disabled above).
+enabled = true
+double_confirm_changes = true
+enable_confirmations = false
+secure_password_change = true
+
+[auth.sms]
+enabled = false
+
+[auth.mfa.totp]
+enroll_enabled = false
+verify_enabled = false
+
+[auth.mfa.phone]
+enroll_enabled = false
+verify_enabled = false

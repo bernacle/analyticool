@@ -10,6 +10,8 @@ This spike defines a **testable tenant-isolation and least-privilege contract** 
 
 The prototype is a **verification artifact**. It is not wired into the demo, it is not an API, and `pnpm dev` still needs no database.
 
+**Authentication ownership refinement (2026-11-16):** the [BRU-492 decision gate](persistent-metrics-library.md) assigns dashboard authentication and durable workspace membership authorization to BRU-492. BRU-493 adopts that boundary for source execution. References below assigning real authentication to BRU-493 describe this spike's original handoff; they do not make dashboard authentication a BRU-493 dependency. The spike's principals remain synthetic.
+
 ## 1. Audited baseline
 
 Branch point `0dea50c` (after BRU-464). Facts that constrain this design:
